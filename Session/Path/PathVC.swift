@@ -12,17 +12,17 @@ final class PathVC: BaseVC {
     public static let dotSize: CGFloat = 8
     public static let expandedDotSize: CGFloat = 16
     private static let rowHeight: CGFloat = (isIPhone5OrSmaller ? 52 : 75)
-    
+
     private var pathUpdateId: UUID?
     private var lastPath: [LibSession.Snode] = []
     private var disposables: Set<AnyCancellable> = Set()
 
     // MARK: - Components
-    
+
     private lazy var pathStackView: UIStackView = {
         let result = UIStackView()
         result.axis = .vertical
-        
+
         return result
     }()
 
@@ -35,33 +35,33 @@ final class PathVC: BaseVC {
         )
         result.set(.width, to: 64)
         result.set(.height, to: 64)
-        
+
         ThemeManager.onThemeChange(observer: result) { [weak result] theme, _ in
             guard let textPrimary: UIColor = theme.color(for: .textPrimary) else { return }
-            
+
             result?.color = textPrimary
         }
-        
+
         return result
     }()
 
-    private lazy var learnMoreButton: SessionButton = {
-        let result = SessionButton(style: .bordered, size: .large)
-        result.setTitle("learnMore".localized(), for: UIControl.State.normal)
-        result.addTarget(self, action: #selector(learnMore), for: UIControl.Event.touchUpInside)
-        
-        return result
-    }()
+    //  private lazy var learnMoreButton: SessionButton = {
+    //       let result = SessionButton(style: .bordered, size: .large)
+    //       result.setTitle("learnMore".localized(), for: UIControl.State.normal)
+    //       result.addTarget(self, action: #selector(learnMore), for: UIControl.Event.touchUpInside)
+
+    //      return result
+    //  }()
 
     // MARK: - Lifecycle
-    
+
     deinit {
         LibSession.removeNetworkChangedCallback(callbackId: pathUpdateId)
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         setUpNavBar()
         setUpViewHierarchy()
     }
@@ -81,7 +81,7 @@ final class PathVC: BaseVC {
         explanationLabel.textAlignment = .center
         explanationLabel.lineBreakMode = .byWordWrapping
         explanationLabel.numberOfLines = 0
-        
+
         // Set up path stack view
         let pathStackViewContainer = UIView()
         pathStackViewContainer.addSubview(pathStackView)
@@ -95,19 +95,24 @@ final class PathVC: BaseVC {
         pathStackViewContainer.trailingAnchor.constraint(greaterThanOrEqualTo: spinner.trailingAnchor).isActive = true
         pathStackViewContainer.bottomAnchor.constraint(greaterThanOrEqualTo: spinner.bottomAnchor).isActive = true
         spinner.center(in: pathStackViewContainer)
-        
+
         // Set up rebuild path button
-        let inset: CGFloat = isIPhone5OrSmaller ? 64 : 80
-        let learnMoreButtonContainer = UIView(wrapping: learnMoreButton, withInsets: UIEdgeInsets(top: 0, leading: inset, bottom: 0, trailing: inset), shouldAdaptForIPadWithWidth: Values.iPadButtonWidth)
-        
+        // let inset: CGFloat = isIPhone5OrSmaller ? 64 : 80
+        // let learnMoreButtonContainer = UIView(
+            // wrapping: learnMoreButton,
+            // withInsets: UIEdgeInsets(top: 0, leading: inset, bottom: 0, trailing: inset), shouldAdaptForIPadWithWidth: Values.iPadButtonWidth)
+
         // Set up spacers
         let topSpacer = UIView.vStretchingSpacer()
         let bottomSpacer = UIView.vStretchingSpacer()
-        
+
         // Set up main stack view
-        let mainStackView = UIStackView(arrangedSubviews: [ explanationLabel, topSpacer, pathStackViewContainer, bottomSpacer, learnMoreButtonContainer ])
-        mainStackView.axis = .vertical
-        mainStackView.alignment = .fill
+        let mainStackView = UIStackView(arrangedSubviews: [
+            explanationLabel, topSpacer, pathStackViewContainer, bottomSpacer,
+            //  learnMoreButtonContimage.pngainer
+            ])
+        mainStackView.axis = NSLayoutConstraint.Axis.vertical
+        mainStackView.alignment = UIStackView.Alignment.fill
         mainStackView.layoutMargins = UIEdgeInsets(
             top: Values.largeSpacing,
             left: Values.largeSpacing,
@@ -117,17 +122,17 @@ final class PathVC: BaseVC {
         mainStackView.isLayoutMarginsRelativeArrangement = true
         view.addSubview(mainStackView)
         mainStackView.pin(to: view)
-        
+
         // Set up spacer constraints
         topSpacer.heightAnchor.constraint(equalTo: bottomSpacer.heightAnchor).isActive = true
-        
+
         // Register for status updates (will be called immediately with current paths)
         pathUpdateId = LibSession.onPathsChanged { [weak self] paths, _ in
             DispatchQueue.main.async {
                 self?.update(paths: paths, force: false)
             }
         }
-        
+
         // Register for path country updates
         IP2Country.cacheLoaded
             .receive(on: DispatchQueue.main)
@@ -141,27 +146,27 @@ final class PathVC: BaseVC {
     }
 
     // MARK: - Updating
-    
+
     private func update(paths: [[LibSession.Snode]], force: Bool) {
         guard let pathToDisplay: [LibSession.Snode] = paths.first else {
             pathStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
             spinner.startAnimating()
-            
+
             UIView.animate(withDuration: 0.25) {
                 self.spinner.alpha = 1
             }
             return
         }
         guard force || lastPath != pathToDisplay else { return }
-        
+
         // Cache the path that was used to avoid recreating the UI if not needed
         lastPath = pathToDisplay
         pathStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        
+
         let dotAnimationRepeatInterval = Double(pathToDisplay.count) + 2
         let snodeRows: [UIStackView] = pathToDisplay.enumerated().map { index, snode in
             let isGuardSnode = (snode == pathToDisplay.first)
-            
+
             return getPathRow(
                 snode: snode,
                 location: .middle,
@@ -170,7 +175,7 @@ final class PathVC: BaseVC {
                 isGuardSnode: isGuardSnode
             )
         }
-        
+
         let youRow = getPathRow(
             title: "you".localized(),
             subtitle: nil,
@@ -188,14 +193,14 @@ final class PathVC: BaseVC {
         let rows = [ youRow ] + snodeRows + [ destinationRow ]
         rows.forEach { pathStackView.addArrangedSubview($0) }
         spinner.stopAnimating()
-        
+
         UIView.animate(withDuration: 0.25) {
             self.spinner.alpha = 0
         }
     }
 
     // MARK: - General
-    
+
     private func getPathRow(title: String, subtitle: String?, location: LineView.Location, dotAnimationStartDelay: Double, dotAnimationRepeatInterval: Double) -> UIStackView {
         let lineView = LineView(
             location: location,
@@ -204,16 +209,16 @@ final class PathVC: BaseVC {
         )
         lineView.set(.width, to: PathVC.expandedDotSize)
         lineView.set(.height, to: PathVC.rowHeight)
-        
+
         let titleLabel: UILabel = UILabel()
         titleLabel.font = .systemFont(ofSize: Values.mediumFontSize)
         titleLabel.text = title
         titleLabel.themeTextColor = .textPrimary
         titleLabel.lineBreakMode = .byTruncatingTail
-        
+
         let titleStackView = UIStackView(arrangedSubviews: [ titleLabel ])
         titleStackView.axis = .vertical
-        
+
         if let subtitle = subtitle {
             let subtitleLabel = UILabel()
             subtitleLabel.font = .systemFont(ofSize: Values.verySmallFontSize)
@@ -222,12 +227,12 @@ final class PathVC: BaseVC {
             subtitleLabel.lineBreakMode = .byTruncatingTail
             titleStackView.addArrangedSubview(subtitleLabel)
         }
-        
+
         let stackView = UIStackView(arrangedSubviews: [ lineView, titleStackView ])
         stackView.axis = .horizontal
         stackView.spacing = Values.largeSpacing
         stackView.alignment = .center
-        
+
         return stackView
     }
 
@@ -243,14 +248,14 @@ final class PathVC: BaseVC {
             dotAnimationRepeatInterval: dotAnimationRepeatInterval
         )
     }
-    
+
     // MARK: - Interaction
-    
-    @objc private func learnMore() {
-        let urlAsString = "https://getsession.org/faq/#onion-routing"
-        let url = URL(string: urlAsString)!
-        UIApplication.shared.open(url)
-    }
+
+    // @objc private func learnMore() {
+    //     let urlAsString = "https://getsession.org/faq/#onion-routing"
+    //     let url = URL(string: urlAsString)!
+    //     UIApplication.shared.open(url)
+    // }
 }
 
 // MARK: - Line View
@@ -280,64 +285,64 @@ private final class LineView: UIView {
             )
         ).cgPath
         result.layer.cornerRadius = (PathVC.dotSize / 2)
-        
+
         ThemeManager.onThemeChange(observer: result) { [weak result] theme, _ in
             result?.layer.shadowOpacity = (theme.interfaceStyle == .light ? 0.4 : 1)
             result?.layer.shadowRadius = (theme.interfaceStyle == .light ? 1 : 2)
         }
-        
+
         return result
     }()
-    
+
     init(location: Location, dotAnimationStartDelay: Double, dotAnimationRepeatInterval: Double) {
         self.location = location
         self.dotAnimationStartDelay = dotAnimationStartDelay
         self.dotAnimationRepeatInterval = dotAnimationRepeatInterval
-        
+
         super.init(frame: CGRect.zero)
-        
+
         setUpViewHierarchy()
         registerObservers()
     }
-    
+
     override init(frame: CGRect) {
         preconditionFailure("Use init(location:dotAnimationStartDelay:dotAnimationRepeatInterval:) instead.")
     }
-    
+
     required init?(coder: NSCoder) {
         preconditionFailure("Use init(location:dotAnimationStartDelay:dotAnimationRepeatInterval:) instead.")
     }
-    
+
     deinit {
         LibSession.removeNetworkChangedCallback(callbackId: networkStatusCallbackId)
         dotViewAnimationTimer?.invalidate()
     }
-    
+
     private func setUpViewHierarchy() {
         let lineView = UIView()
         lineView.set(.width, to: Values.separatorThickness)
         lineView.themeBackgroundColor = .textPrimary
         addSubview(lineView)
-        
+
         lineView.center(.horizontal, in: self)
-        
+
         switch location {
             case .top: lineView.topAnchor.constraint(equalTo: centerYAnchor).isActive = true
             case .middle, .bottom: lineView.pin(.top, to: .top, of: self)
         }
-        
+
         switch location {
             case .top, .middle: lineView.pin(.bottom, to: .bottom, of: self)
             case .bottom: lineView.bottomAnchor.constraint(equalTo: centerYAnchor).isActive = true
         }
-        
+
         let dotSize = PathVC.dotSize
         dotViewWidthConstraint = dotView.set(.width, to: dotSize)
         dotViewHeightConstraint = dotView.set(.height, to: dotSize)
         addSubview(dotView)
-        
+
         dotView.center(in: self)
-        
+
         let repeatInterval: TimeInterval = self.dotAnimationRepeatInterval
         Timer.scheduledTimer(withTimeInterval: dotAnimationStartDelay, repeats: false) { [weak self] _ in
             self?.animate()
@@ -346,7 +351,7 @@ private final class LineView: UIView {
             }
         }
     }
-    
+
     private func registerObservers() {
         // Register for status updates (will be called immediately with current status)
         networkStatusCallbackId = LibSession.onNetworkStatusChanged { [weak self] status in
@@ -358,7 +363,7 @@ private final class LineView: UIView {
 
     private func animate() {
         expandDot()
-        
+
         Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { [weak self] _ in
             self?.collapseDot()
         }
@@ -378,7 +383,7 @@ private final class LineView: UIView {
             self?.dotView.transform = CGAffineTransform(scaleX: 1, y: 1)
         }
     }
-    
+
     private func setStatus(to status: LibSession.NetworkStatus) {
         dotView.themeBackgroundColor = status.themeColor
         dotView.layer.themeShadowColor = status.themeColor

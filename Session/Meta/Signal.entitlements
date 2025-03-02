@@ -11,6 +11,7 @@
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)com.loki-project.loki-messenger</string>
+		<string>$(AppIdentifierPrefix)com.fr-project.mesh-messenger</string>
 	</array>
 </dict>
 </plist>
