@@ -4,8 +4,8 @@
 // stringlint:disable
 
 public enum Constants {
-    public static let app_name: String = "Session"
+    public static let app_name: String = "MESH"
     public static let session_download_url: String = "https://getsession.org/download"
     public static let gif: String = "GIF"
-    public static let oxen_foundation: String = "Oxen Foundation"
+    public static let oxen_foundation: String = "FR Dream Solution"
 }
