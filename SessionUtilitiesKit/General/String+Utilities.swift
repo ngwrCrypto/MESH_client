@@ -7,24 +7,24 @@ import CoreText
 
 public extension String {
     var bytes: [UInt8] { Array(self.utf8) }
-    
+
     var nullIfEmpty: String? {
         guard isEmpty else { return self }
-        
+
         return nil
     }
-    
+
     var glyphCount: Int {
         let richText = NSAttributedString(string: self)
         let line = CTLineCreateWithAttributedString(richText)
-        
+
         return CTLineGetGlyphCount(line)
     }
-    
+
     var isSingleAlphabet: Bool {
         return (glyphCount == 1 && isAlphabetic)
     }
-    
+
     var isAlphabetic: Bool {
         return !isEmpty && range(of: "[^a-zA-Z]", options: .regularExpression) == nil
     }
@@ -46,10 +46,10 @@ public extension String {
             })
         )
     }
-    
+
     func ranges(of substring: String, options: CompareOptions = [], locale: Locale? = nil) -> [Range<Index>] {
         var ranges: [Range<Index>] = []
-        
+
         while
             (ranges.last.map({ $0.upperBound < self.endIndex }) ?? true),
             let range = self.range(
@@ -61,10 +61,10 @@ public extension String {
         {
             ranges.append(range)
         }
-        
+
         return ranges
     }
-    
+
     static func filterNotificationText(_ text: String?) -> String? {
         guard let text = text?.filteredForDisplay else { return nil }
 
@@ -83,18 +83,18 @@ public extension String.StringInterpolation {
     mutating func appendInterpolation(_ value: TimeUnit, unit: TimeUnit.Unit, resolution: Int = 2) {
         appendLiteral("\(TimeUnit(value, unit: unit, resolution: resolution))")
     }
-    
+
     mutating func appendInterpolation(_ value: Int, format: String) {
         let result: String = String(format: "%\(format)d", value)
         appendLiteral(result)
     }
-    
+
     mutating func appendInterpolation(_ value: Double, format: String, omitZeroDecimal: Bool = false) {
         guard !omitZeroDecimal || Int(exactly: value) == nil else {
             appendLiteral("\(Int(exactly: value)!)")
             return
         }
-        
+
         let result: String = String(format: "%\(format)f", value)
         appendLiteral(result)
     }
@@ -105,7 +105,7 @@ public extension String {
         let dateComponentsFormatter = DateComponentsFormatter()
         dateComponentsFormatter.allowedUnits = [.weekOfMonth, .day, .hour, .minute, .second]
         var calendar = Calendar.current
-        
+
         switch format {
             case .videoDuration:
                 guard duration < 3600 else { fallthrough }
@@ -113,7 +113,7 @@ public extension String {
                 dateComponentsFormatter.unitsStyle = .positional
                 dateComponentsFormatter.zeroFormattingBehavior = .pad
                 return dateComponentsFormatter.string(from: duration) ?? ""
-            
+
             case .hoursMinutesSeconds:
                 if duration < 3600 {
                     dateComponentsFormatter.allowedUnits = [.minute, .second]
@@ -129,19 +129,19 @@ public extension String {
                     str.remove(at: str.startIndex)
                 }
                 return str
-                
+
             case .short: // Single unit, no localization, short version e.g. 1w
                 dateComponentsFormatter.maximumUnitCount = 1
                 dateComponentsFormatter.unitsStyle = .abbreviated
                 calendar.locale = Locale(identifier: "en-US")
                 dateComponentsFormatter.calendar = calendar
                 return dateComponentsFormatter.string(from: duration) ?? ""
-                
+
             case .long: // Single unit, long version e.g. 1 week
                 dateComponentsFormatter.maximumUnitCount = 1
                 dateComponentsFormatter.unitsStyle = .full
                 return dateComponentsFormatter.string(from: duration) ?? ""
-            
+
             case .twoUnits: // 2 units, no localization, short version e.g 1w 1d
                 dateComponentsFormatter.maximumUnitCount = 2
                 dateComponentsFormatter.unitsStyle = .abbreviated
@@ -165,11 +165,11 @@ private extension CharacterSet {
     static let bidiRightToLeftOverride: String.UTF16View.Element = 0x202E
     static let bidiPopDirectionalFormatting: String.UTF16View.Element = 0x202C
     static let bidiPopDirectionalIsolate: String.UTF16View.Element = 0x2069
-    
+
     static let bidiControlCharacterSet: CharacterSet = {
         return CharacterSet(charactersIn: "\(bidiLeftToRightIsolate)\(bidiRightToLeftIsolate)\(bidiFirstStrongIsolate)\(bidiLeftToRightEmbedding)\(bidiRightToLeftEmbedding)\(bidiLeftToRightOverride)\(bidiRightToLeftOverride)\(bidiPopDirectionalFormatting)\(bidiPopDirectionalIsolate)")
     }()
-    
+
     static let unsafeFilenameCharacterSet: CharacterSet = CharacterSet(charactersIn: "\u{202D}\u{202E}")
 
     static let nonPrintingCharacterSet: CharacterSet = {
@@ -188,22 +188,22 @@ public extension String {
             .filterForExcessiveDiacriticals
             .ensureBalancedBidiControlCharacters
     }
-    
+
     var filteredFilename: String {
         self.stripped
             .filterForExcessiveDiacriticals
             .filterUnsafeFilenameCharacters
     }
-    
+
     var stripped: String {
         // If string has no printing characters, consider it empty
         guard self.trimmingCharacters(in: .nonPrintingCharacterSet).count > 0 else {
             return ""
         }
-        
+
         return self.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-    
+
     private var hasExcessiveDiacriticals: Bool {
         for char in self.enumerated() {
             let scalarCount = String(char.element).unicodeScalars.count
@@ -214,13 +214,13 @@ public extension String {
 
         return false
     }
-    
+
     private var filterForExcessiveDiacriticals: String {
         guard hasExcessiveDiacriticals else { return self }
-        
+
         return self.folding(options: .diacriticInsensitive, locale: .current)
     }
-    
+
     private var ensureBalancedBidiControlCharacters: String {
         var isolateStartsCount: Int = 0
         var isolatePopCount: Int = 0
@@ -232,58 +232,58 @@ public extension String {
                 case CharacterSet.bidiLeftToRightIsolate, CharacterSet.bidiRightToLeftIsolate,
                     CharacterSet.bidiFirstStrongIsolate:
                     isolateStartsCount += 1
-                    
+
                 case CharacterSet.bidiPopDirectionalIsolate: isolatePopCount += 1
 
                 case CharacterSet.bidiLeftToRightEmbedding, CharacterSet.bidiRightToLeftEmbedding,
                     CharacterSet.bidiLeftToRightOverride, CharacterSet.bidiRightToLeftOverride:
                     formattingStartsCount += 1
-                
+
                 case CharacterSet.bidiPopDirectionalFormatting: formattingPopCount += 1
-                
+
                 default: break
             }
         }
-        
+
         var balancedString: String = ""
-        
+
         // If we have too many isolate pops, prepend FSI to balance
         while isolatePopCount > isolateStartsCount {
             balancedString.append("\(CharacterSet.bidiFirstStrongIsolate)")
             isolateStartsCount += 1
         }
-        
+
         // If we have too many formatting pops, prepend LRE to balance
         while formattingPopCount > formattingStartsCount {
             balancedString.append("\(CharacterSet.bidiLeftToRightEmbedding)")
             formattingStartsCount += 1
         }
-        
+
         balancedString.append(self)
-        
+
         // If we have too many formatting starts, append PDF to balance
         while formattingStartsCount > formattingPopCount {
             balancedString.append("\(CharacterSet.bidiPopDirectionalFormatting)")
             formattingPopCount += 1
         }
-        
+
         // If we have too many isolate starts, append PDI to balance
         while isolateStartsCount > isolatePopCount {
             balancedString.append("\(CharacterSet.bidiPopDirectionalIsolate)")
             isolatePopCount += 1
         }
-        
+
         return balancedString
     }
-    
+
     private var filterUnsafeFilenameCharacters: String {
         var unsafeCharacterSet: CharacterSet = CharacterSet.unsafeFilenameCharacterSet
-        
+
         guard self.rangeOfCharacter(from: unsafeCharacterSet) != nil else { return self }
-        
+
         var filtered = ""
         var remainder = self
-        
+
         while let range = remainder.rangeOfCharacter(from: unsafeCharacterSet) {
             if range.lowerBound != remainder.startIndex {
                 filtered += remainder[..<range.lowerBound]

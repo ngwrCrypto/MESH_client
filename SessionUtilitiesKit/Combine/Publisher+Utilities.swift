@@ -6,7 +6,7 @@ public protocol CombineCompatible {}
 
 public enum PublisherError: Error, CustomStringConvertible {
     case targetPublisherIsNull
-    
+
     // stringlint:ignore_contents
     public var description: String {
         switch self {
@@ -24,18 +24,18 @@ public extension Publisher {
             .autoconnect()
             .eraseToAnyPublisher()
     }
-    
+
     func sink(into subject: PassthroughSubject<Output, Failure>, includeCompletions: Bool = false) -> AnyCancellable {
         return sink(
             receiveCompletion: { completion in
                 guard includeCompletions else { return }
-                
+
                 subject.send(completion: completion)
             },
             receiveValue: { value in subject.send(value) }
         )
     }
-    
+
     func flatMapOptional<T, P>(
         maxPublishers: Subscribers.Demand = .unlimited,
         _ transform: @escaping (Self.Output) -> P?
@@ -47,7 +47,7 @@ public extension Publisher {
                     guard let result: AnyPublisher<T, Error> = transform(output)?.eraseToAnyPublisher() else {
                         throw PublisherError.targetPublisherIsNull
                     }
-                    
+
                     return result
                 }
                 catch {
@@ -57,7 +57,7 @@ public extension Publisher {
             }
             .eraseToAnyPublisher()
     }
-    
+
     func tryFlatMap<T, P>(
         maxPublishers: Subscribers.Demand = .unlimited,
         _ transform: @escaping (Self.Output) throws -> P
@@ -76,7 +76,7 @@ public extension Publisher {
             }
             .eraseToAnyPublisher()
     }
-    
+
     func tryFlatMapOptional<T, P>(
         maxPublishers: Subscribers.Demand = .unlimited,
         _ transform: @escaping (Self.Output) throws -> P?
@@ -88,7 +88,7 @@ public extension Publisher {
                     guard let result: AnyPublisher<T, Error> = try transform(output)?.eraseToAnyPublisher() else {
                         throw PublisherError.targetPublisherIsNull
                     }
-                    
+
                     return result
                 }
                 catch {
@@ -98,7 +98,7 @@ public extension Publisher {
             }
             .eraseToAnyPublisher()
     }
-    
+
     func catchOptional<P>(
         _ handler: @escaping (Self.Failure) -> P?
     ) -> AnyPublisher<P.Output, Error> where P : Publisher, Self.Output == P.Output, P.Failure == Error {
@@ -108,47 +108,47 @@ public extension Publisher {
                     return Fail<P.Output, Error>(error: PublisherError.targetPublisherIsNull)
                         .eraseToAnyPublisher()
                 }
-                
+
                 return result
             }
             .eraseToAnyPublisher()
     }
-    
+
     func subscribe<S>(
         on scheduler: S,
         options: S.SchedulerOptions? = nil,
         using dependencies: Dependencies = Dependencies()
     ) -> AnyPublisher<Output, Failure> where S: Scheduler {
         guard !dependencies.forceSynchronous else { return self.eraseToAnyPublisher() }
-        
+
         return self.subscribe(on: scheduler, options: options)
             .eraseToAnyPublisher()
     }
-    
+
     func receive<S>(
         on scheduler: S,
         options: S.SchedulerOptions? = nil,
         using dependencies: Dependencies = Dependencies()
     ) -> AnyPublisher<Output, Failure> where S: Scheduler {
         guard !dependencies.forceSynchronous else { return self.eraseToAnyPublisher() }
-        
+
         return self.receive(on: scheduler, options: options)
             .eraseToAnyPublisher()
     }
-    
+
     func manualRefreshFrom(_ refreshTrigger: some Publisher<Void, Never>) -> AnyPublisher<Output, Failure> {
         return Publishers
             .CombineLatest(refreshTrigger.prepend(()).setFailureType(to: Failure.self), self)
             .map { _, value in value }
             .eraseToAnyPublisher()
     }
-    
+
     func withPrevious() -> AnyPublisher<(previous: Output?, current: Output), Failure> {
         scan(Optional<(Output?, Output)>.none) { ($0?.1, $1) }
             .compactMap { $0 }
             .eraseToAnyPublisher()
     }
-    
+
     func withPrevious(_ initialPreviousValue: Output) -> AnyPublisher<(previous: Output, current: Output), Failure> {
         scan((initialPreviousValue, initialPreviousValue)) { ($0.1, $1) }.eraseToAnyPublisher()
     }
@@ -159,10 +159,10 @@ public extension Publisher {
 public extension Publisher {
     func sink(into subject: PassthroughSubject<Output, Failure>?, includeCompletions: Bool = false) -> AnyCancellable {
         guard let targetSubject: PassthroughSubject<Output, Failure> = subject else { return AnyCancellable {} }
-        
+
         return sink(into: targetSubject, includeCompletions: includeCompletions)
     }
-    
+
     /// Automatically retains the subscription until it emits a 'completion' event
     func sinkUntilComplete(
         receiveCompletion: ((Subscribers.Completion<Failure>) -> Void)? = nil,
@@ -173,7 +173,7 @@ public extension Publisher {
             .sink(
                 receiveCompletion: { result in
                     receiveCompletion?(result)
-                    
+
                     // Redundant but without reading 'retainCycle' it will warn that the variable
                     // isn't used
                     if retainCycle != nil { retainCycle = nil }
@@ -199,11 +199,11 @@ extension AnyPublisher: ExpressibleByArrayLiteral where Output: Collection {
         guard let convertedElements: Output = Array(elements) as? Output else {
             SNLog("Failed to convery array literal to Publisher due to invalid type conversation of \(type(of: Output.self))")
             guard let empty: Output = [] as? Output else { preconditionFailure("Invalid type") }
-            
+
             self = Just(empty).setFailureType(to: Failure.self).eraseToAnyPublisher()
             return
         }
-        
+
         self = Just(convertedElements).setFailureType(to: Failure.self).eraseToAnyPublisher()
     }
 }
@@ -229,7 +229,7 @@ public extension Publisher where Output == (ResponseInfoType, Data?), Failure ==
         self
             .tryMap { responseInfo, maybeData -> (ResponseInfoType, R) in
                 guard let data: Data = maybeData else { throw NetworkError.parsingFailed }
-                
+
                 return (responseInfo, try data.decoded(as: type, using: dependencies))
             }
             .eraseToAnyPublisher()

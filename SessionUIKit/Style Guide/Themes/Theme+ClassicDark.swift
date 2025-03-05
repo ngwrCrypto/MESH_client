@@ -31,17 +31,17 @@ internal enum Theme_ClassicDark: ThemeColors {
         .textBox_border: .classicDark3,
 
         // MessageBubble
-        .messageBubble_outgoingBackground: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0),
+        .messageBubble_outgoingBackground: .primary,
         .messageBubble_incomingBackground: .classicDark2,
-        .messageBubble_outgoingText: .white,
+        .messageBubble_outgoingText: .classicDark0,
         .messageBubble_incomingText: .classicDark6,
         .messageBubble_overlay: .black_06,
         .messageBubble_deliveryStatus: .classicDark5,
 
         // MenuButton
-        .menuButton_background: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0),
+        .menuButton_background: .primary,
         .menuButton_icon: .classicDark6,
-        .menuButton_outerShadow: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0),
+        .menuButton_outerShadow: .primary,
         .menuButton_innerShadow: .classicDark6,
 
         // RadioButton
@@ -54,19 +54,19 @@ internal enum Theme_ClassicDark: ThemeColors {
         .radioButton_disabledBorder: .disabledDark,
 
         // SessionButton
-        .sessionButton_text: .white,
-        .sessionButton_background: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0),
-        .sessionButton_highlight: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 0.8),
-        .sessionButton_border: .clear,
-        .sessionButton_filledText: .white,
-        .sessionButton_filledBackground: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0),
-        .sessionButton_filledHighlight: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 0.8),
+        .sessionButton_text: .primary,
+        .sessionButton_background: .clear,
+        .sessionButton_highlight: .classicDark6.withAlphaComponent(0.3),
+        .sessionButton_border: .primary,
+        .sessionButton_filledText: .classicDark6,
+        .sessionButton_filledBackground: .classicDark1,
+        .sessionButton_filledHighlight: .classicDark3,
         .sessionButton_destructiveText: .dangerDark,
         .sessionButton_destructiveBackground: .clear,
         .sessionButton_destructiveHighlight: .dangerDark.withAlphaComponent(0.3),
         .sessionButton_destructiveBorder: .dangerDark,
-        .sessionButton_primaryFilledText: .white,
-        .sessionButton_primaryFilledBackground: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0),
+        .sessionButton_primaryFilledText: .black,
+        .sessionButton_primaryFilledBackground: .primary,
 
         // SolidButton
         .solidButton_background: .classicDark3,
@@ -88,8 +88,8 @@ internal enum Theme_ClassicDark: ThemeColors {
         // ConversationButton
         .conversationButton_background: .classicDark0,
         .conversationButton_unreadBackground: .classicDark1,
-        .conversationButton_unreadStripBackground: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0),
-        .conversationButton_unreadBubbleBackground: UIColor(red: 0.4, green: 0.8, blue: 1.0, alpha: 1.0),
+        .conversationButton_unreadStripBackground: .primary,
+        .conversationButton_unreadBubbleBackground: .primary,
         .conversationButton_unreadBubbleText: .classicDark0,
         .conversationButton_swipeDestructive: .dangerDark,
         .conversationButton_swipeSecondary: .classicDark2,
@@ -152,17 +152,17 @@ internal enum Theme_ClassicDark: ThemeColors {
         .textBox_border: .classicDark3,
 
         // MessageBubble
-        .messageBubble_outgoingBackground: Color(red: 0.4, green: 0.8, blue: 1.0),
+        .messageBubble_outgoingBackground: .primary,
         .messageBubble_incomingBackground: .classicDark2,
-        .messageBubble_outgoingText: .white,
+        .messageBubble_outgoingText: .classicDark0,
         .messageBubble_incomingText: .classicDark6,
         .messageBubble_overlay: .black_06,
         .messageBubble_deliveryStatus: .classicDark5,
 
         // MenuButton
-        .menuButton_background: Color(red: 0.4, green: 0.8, blue: 1.0),
+        .menuButton_background: .primary,
         .menuButton_icon: .classicDark6,
-        .menuButton_outerShadow: Color(red: 0.4, green: 0.8, blue: 1.0),
+        .menuButton_outerShadow: .primary,
         .menuButton_innerShadow: .classicDark6,
 
         // RadioButton
@@ -175,19 +175,19 @@ internal enum Theme_ClassicDark: ThemeColors {
         .radioButton_disabledBorder: .disabledDark,
 
         // SessionButton
-        .sessionButton_text: .white,
-        .sessionButton_background: Color(red: 0.4, green: 0.8, blue: 1.0),
-        .sessionButton_highlight: Color(red: 0.4, green: 0.8, blue: 1.0).opacity(0.8),
-        .sessionButton_border: .clear,
-        .sessionButton_filledText: .white,
-        .sessionButton_filledBackground: Color(red: 0.4, green: 0.8, blue: 1.0),
-        .sessionButton_filledHighlight: Color(red: 0.4, green: 0.8, blue: 1.0).opacity(0.8),
+        .sessionButton_text: .primary,
+        .sessionButton_background: .clear,
+        .sessionButton_highlight: .classicDark6.opacity(0.3),
+        .sessionButton_border: .primary,
+        .sessionButton_filledText: .classicDark6,
+        .sessionButton_filledBackground: .classicDark1,
+        .sessionButton_filledHighlight: .classicDark3,
         .sessionButton_destructiveText: .dangerDark,
         .sessionButton_destructiveBackground: .clear,
         .sessionButton_destructiveHighlight: .dangerDark.opacity(0.3),
         .sessionButton_destructiveBorder: .dangerDark,
-        .sessionButton_primaryFilledText: .white,
-        .sessionButton_primaryFilledBackground: Color(red: 0.4, green: 0.8, blue: 1.0),
+        .sessionButton_primaryFilledText: .black,
+        .sessionButton_primaryFilledBackground: .primary,
 
         // SolidButton
         .solidButton_background: .classicDark3,
@@ -209,8 +209,8 @@ internal enum Theme_ClassicDark: ThemeColors {
         // ConversationButton
         .conversationButton_background: .classicDark1,
         .conversationButton_unreadBackground: .classicDark2,
-        .conversationButton_unreadStripBackground: Color(red: 0.4, green: 0.8, blue: 1.0),
-        .conversationButton_unreadBubbleBackground: Color(red: 0.4, green: 0.8, blue: 1.0),
+        .conversationButton_unreadStripBackground: .primary,
+        .conversationButton_unreadBubbleBackground: .classicDark3,
         .conversationButton_unreadBubbleText: .classicDark6,
         .conversationButton_swipeDestructive: .dangerDark,
         .conversationButton_swipeSecondary: .classicDark2,

@@ -11,18 +11,20 @@ extension SessionCell {
         // Note: We set a minimum width for the 'AccessoryView' so that the titles line up
         // nicely when we have a mix of icons and switches
         private static let minWidth: CGFloat = 50
-        
+
         private var onTap: ((SessionButton?) -> Void)?
         private var searchTermChanged: ((String?) -> Void)?
-        
+
         // MARK: - UI
-        
+
         private lazy var minWidthConstraint: NSLayoutConstraint = self.widthAnchor
             .constraint(greaterThanOrEqualToConstant: AccessoryView.minWidth)
         private lazy var fixedWidthConstraint: NSLayoutConstraint = self.set(.width, to: AccessoryView.minWidth)
         private lazy var imageViewConstraints: [NSLayoutConstraint] = [
             imageView.pin(.top, to: .top, of: self),
-            imageView.pin(.bottom, to: .bottom, of: self)
+            imageView.pin(.bottom, to: .bottom, of: self),
+            imageView.pin(.leading, to: .leading, of: self),
+            imageView.set(.width, to: 24)
         ]
         private lazy var imageViewLeadingConstraint: NSLayoutConstraint = imageView.pin(.leading, to: .leading, of: self)
         private lazy var imageViewTrailingConstraint: NSLayoutConstraint = imageView.pin(.trailing, to: .trailing, of: self)
@@ -73,7 +75,7 @@ extension SessionCell {
             button.pin(.trailing, to: .trailing, of: self),
             button.pin(.bottom, to: .bottom, of: self)
         ]
-        
+
         private let imageView: UIImageView = {
             let result: UIImageView = UIImageView()
             result.translatesAutoresizingMaskIntoConstraints = false
@@ -83,10 +85,10 @@ extension SessionCell {
             result.layer.minificationFilter = .trilinear
             result.layer.magnificationFilter = .trilinear
             result.isHidden = true
-            
+
             return result
         }()
-        
+
         private let toggleSwitch: UISwitch = {
             let result: UISwitch = UISwitch()
             result.translatesAutoresizingMaskIntoConstraints = false
@@ -95,10 +97,10 @@ extension SessionCell {
             result.isHidden = true
             result.setContentHugging(to: .required)
             result.setCompressionResistance(to: .required)
-            
+
             return result
         }()
-        
+
         private let dropDownStackView: UIStackView = {
             let result: UIStackView = UIStackView()
             result.translatesAutoresizingMaskIntoConstraints = false
@@ -107,20 +109,20 @@ extension SessionCell {
             result.alignment = .center
             result.spacing = Values.verySmallSpacing
             result.isHidden = true
-            
+
             return result
         }()
-        
+
         private let dropDownImageView: UIImageView = {
             let result: UIImageView = UIImageView(image: UIImage(systemName: "arrowtriangle.down.fill"))
             result.translatesAutoresizingMaskIntoConstraints = false
             result.themeTintColor = .textPrimary
             result.set(.width, to: 10)
             result.set(.height, to: 10)
-            
+
             return result
         }()
-        
+
         private let dropDownLabel: UILabel = {
             let result: UILabel = UILabel()
             result.translatesAutoresizingMaskIntoConstraints = false
@@ -128,10 +130,10 @@ extension SessionCell {
             result.themeTextColor = .textPrimary
             result.setContentHugging(to: .required)
             result.setCompressionResistance(to: .required)
-            
+
             return result
         }()
-        
+
         private let radioBorderView: UIView = {
             let result: UIView = UIView()
             result.translatesAutoresizingMaskIntoConstraints = false
@@ -139,36 +141,36 @@ extension SessionCell {
             result.layer.borderWidth = 1
             result.themeBorderColor = .radioButton_unselectedBorder
             result.isHidden = true
-            
+
             return result
         }()
-        
+
         private let radioView: UIView = {
             let result: UIView = UIView()
             result.translatesAutoresizingMaskIntoConstraints = false
             result.isUserInteractionEnabled = false
             result.themeBackgroundColor = .radioButton_unselectedBackground
             result.isHidden = true
-            
+
             return result
         }()
-        
+
         public lazy var highlightingBackgroundLabel: SessionHighlightingBackgroundLabel = {
             let result: SessionHighlightingBackgroundLabel = SessionHighlightingBackgroundLabel()
             result.translatesAutoresizingMaskIntoConstraints = false
             result.isHidden = true
-            
+
             return result
         }()
-        
+
         private lazy var profilePictureView: ProfilePictureView = {
             let result: ProfilePictureView = ProfilePictureView(size: .list)
             result.translatesAutoresizingMaskIntoConstraints = false
             result.isHidden = true
-            
+
             return result
         }()
-        
+
         private lazy var searchBar: UISearchBar = {
             let result: ContactsSearchBar = ContactsSearchBar()
             result.themeTintColor = .textPrimary
@@ -176,32 +178,32 @@ extension SessionCell {
             result.searchTextField.themeBackgroundColor = .backgroundSecondary
             result.delegate = self
             result.isHidden = true
-            
+
             return result
         }()
-        
+
         private lazy var button: SessionButton = {
             let result: SessionButton = SessionButton(style: .bordered, size: .medium)
             result.translatesAutoresizingMaskIntoConstraints = false
             result.addTarget(self, action: #selector(buttonTapped), for: .touchUpInside)
             result.isHidden = true
-            
+
             return result
         }()
-        
+
         private var customView: UIView?
-        
+
         // MARK: - Initialization
-        
+
         override init(frame: CGRect) {
             super.init(frame: frame)
-            
+
             setupViewHierarchy()
         }
 
         required init?(coder: NSCoder) {
             super.init(coder: coder)
-            
+
             setupViewHierarchy()
         }
 
@@ -214,21 +216,21 @@ extension SessionCell {
             addSubview(profilePictureView)
             addSubview(button)
             addSubview(searchBar)
-            
+
             dropDownStackView.addArrangedSubview(dropDownImageView)
             dropDownStackView.addArrangedSubview(dropDownLabel)
-            
+
             radioBorderView.addSubview(radioView)
             radioView.center(in: radioBorderView)
         }
-        
+
         // MARK: - Content
-        
+
         func prepareForReuse() {
             isHidden = true
             onTap = nil
             searchTermChanged = nil
-            
+
             imageView.image = nil
             imageView.themeTintColor = .textPrimary
             imageView.contentMode = .scaleAspectFit
@@ -240,7 +242,7 @@ extension SessionCell {
             highlightingBackgroundLabel.text = ""
             highlightingBackgroundLabel.themeTextColor = .textPrimary
             customView?.removeFromSuperview()
-            
+
             imageView.isHidden = true
             toggleSwitch.isHidden = true
             dropDownStackView.isHidden = true
@@ -251,7 +253,7 @@ extension SessionCell {
             profilePictureView.isHidden = true
             button.isHidden = true
             searchBar.isHidden = true
-            
+
             minWidthConstraint.constant = AccessoryView.minWidth
             minWidthConstraint.isActive = false
             fixedWidthConstraint.constant = AccessoryView.minWidth
@@ -273,7 +275,7 @@ extension SessionCell {
             searchBarConstraints.forEach { $0.isActive = false }
             buttonConstraints.forEach { $0.isActive = false }
         }
-        
+
         public func update(
             with accessory: Accessory?,
             tintColor: ThemeValue,
@@ -281,7 +283,7 @@ extension SessionCell {
             isManualReload: Bool
         ) {
             guard let accessory: Accessory = accessory else { return }
-            
+
             // If we have an accessory value then this shouldn't be hidden
             self.isHidden = false
 
@@ -293,7 +295,7 @@ extension SessionCell {
                     imageView.themeTintColor = (customTint ?? tintColor)
                     imageView.contentMode = (shouldFill ? .scaleAspectFill : .scaleAspectFit)
                     imageView.isHidden = false
-                    
+
                     switch iconSize {
                         case .fit:
                             imageView.sizeToFit()
@@ -307,7 +309,7 @@ extension SessionCell {
                             imageViewWidthConstraint.constant = iconSize.size
                             imageViewHeightConstraint.constant = iconSize.size
                     }
-                    
+
                     minWidthConstraint.isActive = !fixedWidthConstraint.isActive
                     imageViewLeadingConstraint.constant = (shouldFill ? 0 : Values.smallSpacing)
                     imageViewTrailingConstraint.constant = (shouldFill ? 0 : -Values.smallSpacing)
@@ -316,7 +318,7 @@ extension SessionCell {
                     imageViewWidthConstraint.isActive = true
                     imageViewHeightConstraint.isActive = true
                     imageViewConstraints.forEach { $0.isActive = true }
-                
+
                 case .iconAsync(let iconSize, let customTint, let shouldFill, let accessibility, let setter):
                     setter(imageView)
                     imageView.accessibilityIdentifier = accessibility?.identifier
@@ -324,7 +326,7 @@ extension SessionCell {
                     imageView.themeTintColor = (customTint ?? tintColor)
                     imageView.contentMode = (shouldFill ? .scaleAspectFill : .scaleAspectFit)
                     imageView.isHidden = false
-                    
+
                     switch iconSize {
                         case .fit:
                             imageView.sizeToFit()
@@ -338,7 +340,7 @@ extension SessionCell {
                             imageViewWidthConstraint.constant = iconSize.size
                             imageViewHeightConstraint.constant = iconSize.size
                     }
-                    
+
                     minWidthConstraint.isActive = !fixedWidthConstraint.isActive
                     imageViewLeadingConstraint.constant = (shouldFill ? 0 : Values.smallSpacing)
                     imageViewTrailingConstraint.constant = (shouldFill ? 0 : -Values.smallSpacing)
@@ -347,19 +349,19 @@ extension SessionCell {
                     imageViewWidthConstraint.isActive = true
                     imageViewHeightConstraint.isActive = true
                     imageViewConstraints.forEach { $0.isActive = true }
-                    
+
                 case .toggle(let dataSource, let accessibility):
                     toggleSwitch.accessibilityIdentifier = accessibility?.identifier
                     toggleSwitch.accessibilityLabel = accessibility?.label
                     toggleSwitch.isHidden = false
                     toggleSwitch.isEnabled = isEnabled
-                    
+
                     fixedWidthConstraint.isActive = true
                     toggleSwitchConstraints.forEach { $0.isActive = true }
-                    
+
                     if !isManualReload {
                         toggleSwitch.setOn(dataSource.oldBoolValue, animated: false)
-                        
+
                         // Dispatch so the cell reload doesn't conflict with the setting change animation
                         if dataSource.oldBoolValue != dataSource.currentBoolValue {
                             DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(10)) { [weak toggleSwitch] in
@@ -367,7 +369,7 @@ extension SessionCell {
                             }
                         }
                     }
-                    
+
                 case .dropDown(let dataSource, let accessibility):
                     dropDownLabel.accessibilityIdentifier = accessibility?.identifier
                     dropDownLabel.accessibilityLabel = accessibility?.label
@@ -375,15 +377,15 @@ extension SessionCell {
                     dropDownStackView.isHidden = false
                     dropDownStackViewConstraints.forEach { $0.isActive = true }
                     minWidthConstraint.isActive = true
-                    
+
                 case .radio(let size, let isSelectedRetriever, let storedSelection, let accessibility):
                     let isSelected: Bool = isSelectedRetriever()
                     let wasOldSelection: Bool = (!isSelected && storedSelection)
-                
+
                     radioBorderView.isAccessibilityElement = true
                     radioBorderView.accessibilityIdentifier = accessibility?.identifier
                     radioBorderView.accessibilityLabel = accessibility?.label
-                    
+
                     if isSelected || wasOldSelection {
                         radioBorderView.accessibilityTraits.insert(.selected)
                         radioBorderView.accessibilityValue = "selected"
@@ -391,19 +393,19 @@ extension SessionCell {
                         radioBorderView.accessibilityTraits.remove(.selected)
                         radioBorderView.accessibilityValue = nil
                     }
-                    
+
                     radioBorderView.isHidden = false
                     radioBorderView.themeBorderColor = {
                         guard isEnabled else { return .radioButton_disabledBorder }
-                        
+
                         return (isSelected ?
                             .radioButton_selectedBorder :
                             .radioButton_unselectedBorder
                         )
                     }()
-                    
+
                     radioBorderView.layer.cornerRadius = (size.borderSize / 2)
-                    
+
                     radioView.alpha = (wasOldSelection ? 0.3 : 1)
                     radioView.isHidden = (!isSelected && !storedSelection)
                     radioView.themeBackgroundColor = {
@@ -413,26 +415,26 @@ extension SessionCell {
                                 .radioButton_disabledUnselectedBackground
                             )
                         }
-                        
+
                         return (isSelected || wasOldSelection ?
                             .radioButton_selectedBackground :
                             .radioButton_unselectedBackground
                         )
                     }()
                     radioView.layer.cornerRadius = (size.selectionSize / 2)
-                    
+
                     radioViewWidthConstraint.constant = size.selectionSize
                     radioViewHeightConstraint.constant = size.selectionSize
                     radioBorderViewWidthConstraint.constant = size.borderSize
                     radioBorderViewHeightConstraint.constant = size.borderSize
-                    
+
                     fixedWidthConstraint.isActive = true
                     radioViewWidthConstraint.isActive = true
                     radioViewHeightConstraint.isActive = true
                     radioBorderViewWidthConstraint.isActive = true
                     radioBorderViewHeightConstraint.isActive = true
                     radioBorderViewConstraints.forEach { $0.isActive = true }
-                    
+
                 case .highlightingBackgroundLabel(let title, let accessibility):
                     highlightingBackgroundLabel.accessibilityIdentifier = accessibility?.identifier
                     highlightingBackgroundLabel.accessibilityLabel = accessibility?.label
@@ -441,7 +443,7 @@ extension SessionCell {
                     highlightingBackgroundLabel.isHidden = false
                     highlightingBackgroundLabelConstraints.forEach { $0.isActive = true }
                     minWidthConstraint.isActive = true
-                    
+
                 case .profile(
                     let profileId,
                     let profileSize,
@@ -469,11 +471,11 @@ extension SessionCell {
                         additionalProfileIcon: additionalProfileIcon
                     )
                     profilePictureView.isHidden = false
-                    
+
                     fixedWidthConstraint.constant = profileSize.viewSize
                     fixedWidthConstraint.isActive = true
                     profilePictureViewConstraints.forEach { $0.isActive = true }
-                    
+
                 case .search(let placeholder, let accessibility, let searchTermChanged):
                     self.searchTermChanged = searchTermChanged
                     searchBar.accessibilityIdentifier = accessibility?.identifier
@@ -481,7 +483,7 @@ extension SessionCell {
                     searchBar.placeholder = placeholder
                     searchBar.isHidden = false
                     searchBarConstraints.forEach { $0.isActive = true }
-                    
+
                 case .button(let style, let title, let accessibility, let onTap):
                     self.onTap = onTap
                     button.accessibilityIdentifier = accessibility?.identifier
@@ -491,50 +493,50 @@ extension SessionCell {
                     button.isHidden = false
                     minWidthConstraint.isActive = true
                     buttonConstraints.forEach { $0.isActive = true }
-                    
+
                 case .customView(_, let viewGenerator):
                     let generatedView: UIView = viewGenerator()
                     addSubview(generatedView)
-                    
+
                     generatedView.pin(.top, to: .top, of: self)
                     generatedView.pin(.leading, to: .leading, of: self)
                     generatedView.pin(.trailing, to: .trailing, of: self)
                     generatedView.pin(.bottom, to: .bottom, of: self)
-                    
+
                     customView?.removeFromSuperview()  // Just in case
                     customView = generatedView
                     minWidthConstraint.isActive = true
             }
         }
-        
+
         // MARK: - Interaction
-        
+
         func setHighlighted(_ highlighted: Bool, animated: Bool) {
             highlightingBackgroundLabel.setHighlighted(highlighted, animated: animated)
         }
-        
+
         func setSelected(_ selected: Bool, animated: Bool) {
             highlightingBackgroundLabel.setSelected(selected, animated: animated)
         }
-        
+
         @objc private func buttonTapped() {
             onTap?(button)
         }
-        
+
         // MARK: - UISearchBarDelegate
-        
+
         public func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
             searchTermChanged?(searchText)
         }
-        
+
         public func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
             searchBar.setShowsCancelButton(true, animated: true)
         }
-        
+
         public func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
             searchBar.setShowsCancelButton(false, animated: true)
         }
-        
+
         public func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
             searchBar.endEditing(true)
         }
