@@ -6446,7 +6446,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.9.0;
+				MARKETING_VERSION = 2.9.5;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.fr-project.mesh-messenger.ShareExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -6522,7 +6522,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 2.9.0;
+				MARKETING_VERSION = 2.9.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.fr-project.mesh-messenger.ShareExtension";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -7485,7 +7485,7 @@
 				CODE_SIGN_ENTITLEMENTS = Session/Meta/Signal.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 534;
+				CURRENT_PROJECT_VERSION = 535;
 				DEVELOPMENT_TEAM = KLK9M4MQMH;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -7525,7 +7525,7 @@
 					"$(SRCROOT)",
 				);
 				LLVM_LTO = NO;
-				MARKETING_VERSION = 2.9.0;
+				MARKETING_VERSION = 2.9.5;
 				OTHER_LDFLAGS = "$(inherited)";
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.fr-project.mesh-messenger";
@@ -7556,7 +7556,7 @@
 				CODE_SIGN_ENTITLEMENTS = Session/Meta/Signal.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 534;
+				CURRENT_PROJECT_VERSION = 535;
 				DEVELOPMENT_TEAM = KLK9M4MQMH;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -7596,7 +7596,7 @@
 					"$(SRCROOT)",
 				);
 				LLVM_LTO = NO;
-				MARKETING_VERSION = 2.9.0;
+				MARKETING_VERSION = 2.9.5;
 				OTHER_LDFLAGS = "$(inherited)";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.fr-project.mesh-messenger";
 				PRODUCT_NAME = Session;

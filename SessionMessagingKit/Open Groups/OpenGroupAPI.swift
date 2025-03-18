@@ -10,7 +10,7 @@ import SessionUtilitiesKit
 
 public enum OpenGroupAPI {
     // MARK: - Settings
-    
+
     public static let legacyDefaultServerIP = "116.203.70.33"
     public static let defaultServer = "https://open.getsession.org"
     public static let defaultServerPublicKey = "a03c383cf63c3c4efe67acc52112a6dd734b3a946b9545f488aaa93da7991238"
@@ -18,7 +18,7 @@ public enum OpenGroupAPI {
     public static let workQueue = DispatchQueue(label: "OpenGroupAPI.workQueue", qos: .userInitiated) // It's important that this is a serial queue
 
     // MARK: - Batching & Polling
-    
+
     /// This is a convenience method which calls `/batch` with a pre-defined set of requests used to update an Open
     /// Group, currently this will retrieve:
     /// - Capabilities for the server
@@ -78,7 +78,7 @@ public enum OpenGroupAPI {
                             timeSinceLastPoll > OpenGroupAPI.Poller.maxInactivityPeriod
                         )
                     )
-                    
+
                     return [
                         try preparedRoomPollInfo(
                             db,
@@ -117,7 +117,7 @@ public enum OpenGroupAPI {
                             try preparedInboxSince(db, id: lastInboxMessageId, on: server, using: dependencies)
                         )
                     ),
-                    
+
                     // Outbox
                     (lastOutboxMessageId == 0 ?
                         try preparedOutbox(db, on: server, using: dependencies) :
@@ -126,7 +126,7 @@ public enum OpenGroupAPI {
                 ].compactMap { $0 }
             )
         )
-        
+
         return try OpenGroupAPI
             .preparedBatch(
                 db,
@@ -136,7 +136,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Submits multiple requests wrapped up in a single request, runs them all, then returns the result of each one
     ///
     /// Requests are performed independently, that is, if one fails the others will still be attempted - there is no guarantee on the order in which
@@ -164,7 +164,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// This is like `/batch`, except that it guarantees to perform requests sequentially in the order provided and will stop processing requests
     /// if the previous request returned a non-`2xx` response
     ///
@@ -195,9 +195,9 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     // MARK: - Capabilities
-    
+
     /// Return the list of server features/capabilities
     ///
     /// Optionally takes a `required` parameter containing a comma-separated list of capabilites; if any are not satisfied a 412 (Precondition Failed)
@@ -224,9 +224,9 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     // MARK: - Room
-    
+
     /// Returns a list of available rooms on the server
     ///
     /// Rooms to which the user does not have access (e.g. because they are banned, or the room has restricted access permissions) are not included
@@ -247,7 +247,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Returns the details of a single room
     public static func preparedRoom(
         _ db: Database,
@@ -267,7 +267,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Polls a room for metadata updates
     ///
     /// The endpoint polls room metadata for this room, always including the instantaneous room details (such as the user's permission and current
@@ -291,12 +291,12 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     public typealias CapabilitiesAndRoomResponse = (
         capabilities: (info: ResponseInfoType, data: Capabilities),
         room: (info: ResponseInfoType, data: Room)
     )
-    
+
     /// This is a convenience method which constructs a `/sequence` of the `capabilities` and `room`  requests, refer to those
     /// methods for the documented behaviour of each method
     public static func preparedCapabilitiesAndRoom(
@@ -329,26 +329,26 @@ public enum OpenGroupAPI {
                     })
                     .map { _, value in value }
                 let maybeRoom: Network.BatchSubResponse<Room>? = (maybeRoomResponse as? Network.BatchSubResponse<Room>)
-                
+
                 guard
                     let capabilitiesInfo: ResponseInfoType = maybeCapabilities,
                     let capabilities: Capabilities = maybeCapabilities?.body,
                     let roomInfo: ResponseInfoType = maybeRoom,
                     let room: Room = maybeRoom?.body
                 else { throw NetworkError.parsingFailed }
-                
+
                 return (
                     capabilities: (info: capabilitiesInfo, data: capabilities),
                     room: (info: roomInfo, data: room)
                 )
             }
     }
-    
+
     public typealias CapabilitiesAndRoomsResponse = (
         capabilities: (info: ResponseInfoType, data: Capabilities),
         rooms: (info: ResponseInfoType, data: [Room])
     )
-    
+
     /// This is a convenience method which constructs a `/sequence` of the `capabilities` and `rooms`  requests, refer to those
     /// methods for the documented behaviour of each method
     public static func preparedCapabilitiesAndRooms(
@@ -379,23 +379,23 @@ public enum OpenGroupAPI {
                         }
                     })
                     .map { _, value in value as? Network.BatchSubResponse<[Room]> }
-                
+
                 guard
                     let capabilitiesInfo: ResponseInfoType = maybeCapabilities,
                     let capabilities: Capabilities = maybeCapabilities?.body,
                     let roomsInfo: ResponseInfoType = maybeRooms,
                     let rooms: [Room] = maybeRooms?.body
                 else { throw NetworkError.parsingFailed }
-                
+
                 return (
                     capabilities: (info: capabilitiesInfo, data: capabilities),
                     rooms: (info: roomsInfo, data: rooms)
                 )
             }
     }
-    
+
     // MARK: - Messages
-    
+
     /// Posts a new message to a room
     public static func preparedSend(
         _ db: Database,
@@ -414,7 +414,7 @@ public enum OpenGroupAPI {
             fallbackSigningType: .standard,
             using: dependencies
         )
-        
+
         return try OpenGroupAPI
             .prepareRequest(
                 request: Request(
@@ -435,7 +435,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Returns a single message by ID
     public static func preparedMessage(
         _ db: Database,
@@ -456,7 +456,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Edits a message, replacing its existing content with new content and a new signature
     ///
     /// **Note:** This edit may only be initiated by the creator of the post, and the poster must currently have write permissions in the room
@@ -476,7 +476,7 @@ public enum OpenGroupAPI {
             fallbackSigningType: .standard,
             using: dependencies
         )
-        
+
         return try OpenGroupAPI
             .prepareRequest(
                 request: Request(
@@ -495,7 +495,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Remove a message by its message id
     public static func preparedMessageDelete(
         _ db: Database,
@@ -517,7 +517,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Retrieves recent messages posted to this room
     ///
     /// Returns the most recent limit messages (100 if no limit is given). This only returns extant messages, and always returns the latest
@@ -545,7 +545,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Retrieves messages from the room preceding a given id.
     ///
     /// This endpoint is intended to be used with .../recent to allow a client to retrieve the most recent messages and then walk backwards
@@ -575,7 +575,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Retrieves message updates from a room. This is the main message polling endpoint in SOGS.
     ///
     /// This endpoint retrieves new, edited, and deleted messages or message reactions posted to this room since the given message
@@ -605,7 +605,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Deletes all messages from a given sessionId within the provided rooms (or globally) on a server
     ///
     /// - Parameters:
@@ -639,9 +639,9 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     // MARK: - Reactions
-    
+
     /// Returns the list of all reactors who have added a particular reaction to a particular message.
     public static func preparedReactors(
         _ db: Database,
@@ -656,7 +656,7 @@ public enum OpenGroupAPI {
         guard let encodedEmoji: String = emoji.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
             throw OpenGroupAPIError.invalidEmoji
         }
-        
+
         return try OpenGroupAPI
             .prepareRequest(
                 request: Request<NoBody, Endpoint>(
@@ -670,7 +670,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Adds a reaction to the given message in this room. The user must have read access in the room.
     ///
     /// Reactions are short strings of 1-12 unicode codepoints, typically emoji (or character sequences to produce an emoji variant,
@@ -688,7 +688,7 @@ public enum OpenGroupAPI {
         guard let encodedEmoji: String = emoji.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
             throw OpenGroupAPIError.invalidEmoji
         }
-        
+
         return try OpenGroupAPI
             .prepareRequest(
                 request: Request<NoBody, Endpoint>(
@@ -702,7 +702,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Removes a reaction from a post this room. The user must have read access in the room. This only removes the user's own reaction
     /// but does not affect the reactions of other users.
     public static func preparedReactionDelete(
@@ -718,7 +718,7 @@ public enum OpenGroupAPI {
         guard let encodedEmoji: String = emoji.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
             throw OpenGroupAPIError.invalidEmoji
         }
-        
+
         return try OpenGroupAPI
             .prepareRequest(
                 request: Request<NoBody, Endpoint>(
@@ -732,7 +732,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Removes all reactions of all users from a post in this room. The calling must have moderator permissions in the room. This endpoint
     /// can either remove a single reaction (e.g. remove all 🍆 reactions) by specifying it after the message id (following a /), or remove all
     /// reactions from the post by not including the /<reaction> suffix of the URL.
@@ -749,7 +749,7 @@ public enum OpenGroupAPI {
         guard let encodedEmoji: String = emoji.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
             throw OpenGroupAPIError.invalidEmoji
         }
-        
+
         return try OpenGroupAPI
             .prepareRequest(
                 request: Request<NoBody, Endpoint>(
@@ -763,9 +763,9 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     // MARK: - Pinning
-    
+
     /// Adds a pinned message to this room
     ///
     /// **Note:** Existing pinned messages are not removed: the new message is added to the pinned message list (If you want to remove existing
@@ -796,7 +796,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Remove a message from this room's pinned message list
     ///
     /// The user must have `admin` (not just `moderator`) permissions in the room
@@ -820,7 +820,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Removes _all_ pinned messages from this room
     ///
     /// The user must have `admin` (not just `moderator`) permissions in the room
@@ -843,9 +843,9 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     // MARK: - Files
-    
+
     public static func uploadDestination(
         _ db: Database,
         data: Data,
@@ -855,7 +855,7 @@ public enum OpenGroupAPI {
         guard let url: URL = URL(string: "\(openGroup.server)/\(Endpoint.roomFile(openGroup.roomToken).path)") else {
             throw NetworkError.invalidURL
         }
-        
+
         return try .server(
             url: url,
             method: .post,
@@ -864,17 +864,17 @@ public enum OpenGroupAPI {
         )
         .signed(db, server: openGroup.server, data: data, using: dependencies)
     }
-    
+
     public static func isInvalidOpenGroupFileUrl(url: URL, openGroup: OpenGroup) -> Bool {
         // If the url doesn't end with a fileId then it's invalid
         guard let fileId: String = Attachment.fileId(for: url.absoluteString) else { return true }
-        
+
         return (
             !url.absoluteString.starts(with: openGroup.server) ||
             url != (try? downloadUrlFor(fileId: fileId, server: openGroup.server, roomToken: openGroup.roomToken))
         )
     }
-    
+
     public static func downloadUrlFor(
         fileId: String,
         server: String,
@@ -885,7 +885,7 @@ public enum OpenGroupAPI {
             { throw NetworkError.invalidURL }()
         )
     }
-    
+
     public static func downloadDestination(
         _ db: Database,
         fileId: String,
@@ -899,7 +899,7 @@ public enum OpenGroupAPI {
             using: dependencies
         )
     }
-    
+
     public static func downloadDestination(
         _ db: Database,
         url: URL,
@@ -916,7 +916,7 @@ public enum OpenGroupAPI {
                     ),
                     let fileId: String = Attachment.fileId(for: url.absoluteString)
                 else { return url }
-                
+
                 return try downloadUrlFor(fileId: fileId, server: openGroup.server, roomToken: openGroup.roomToken)
             }(),
             method: .get,
@@ -925,7 +925,7 @@ public enum OpenGroupAPI {
         )
         .signed(db, server: openGroup.server, data: nil, using: dependencies)
     }
-    
+
     // MARK: - Inbox/Outbox (Message Requests)
 
     /// Retrieves all of the user's current DMs (up to limit)
@@ -948,7 +948,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Polls for any DMs received since the given id, this method will return a `304` with an empty response if there are no messages
     ///
     /// **Note:** `inboxSince` will return a `304` with an empty response if no messages (hence the optional return type)
@@ -970,7 +970,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Remove all message requests from inbox, this methrod will return the number of messages deleted
     public static func preparedClearInbox(
         _ db: Database,
@@ -994,7 +994,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Delivers a direct message to a user via their blinded Session ID
     ///
     /// The body of this request is a JSON object containing a message key with a value of the encrypted-then-base64-encoded message to deliver
@@ -1021,7 +1021,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Retrieves all of the user's sent DMs (up to limit)
     ///
     /// **Note:** `outbox` will return a `304` with an empty response if no messages (hence the optional return type)
@@ -1042,7 +1042,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Polls for any DMs sent since the given id, this method will return a `304` with an empty response if there are no messages
     ///
     /// **Note:** `outboxSince` will return a `304` with an empty response if no messages (hence the optional return type)
@@ -1064,9 +1064,9 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     // MARK: - Users
-    
+
     /// Applies a ban of a user from specific rooms, or from the server globally
     ///
     /// The invoking user must have `moderator` (or `admin`) permission in all given rooms when specifying rooms, and must be a
@@ -1124,7 +1124,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Removes a user ban from specific rooms, or from the server globally
     ///
     /// The invoking user must have `moderator` (or `admin`) permission in all given rooms when specifying rooms, and must be a global server `moderator`
@@ -1173,7 +1173,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// Appoints or removes a moderator or admin
     ///
     /// This endpoint is used to appoint or remove moderator/admin permissions either for specific rooms or for server-wide global moderator permissions
@@ -1238,7 +1238,7 @@ public enum OpenGroupAPI {
         guard (moderator != nil && admin == nil) || (moderator == nil && admin != nil) else {
             throw NetworkError.invalidPreparedRequest
         }
-        
+
         return try OpenGroupAPI
             .prepareRequest(
                 request: Request(
@@ -1259,7 +1259,7 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     /// This is a convenience method which constructs a `/sequence` of the `userBan` and `userDeleteMessages`  requests, refer to those
     /// methods for the documented behaviour of each method
     public static func preparedUserBanAndDeleteAllMessages(
@@ -1293,9 +1293,9 @@ public enum OpenGroupAPI {
             )
             .signed(db, with: OpenGroupAPI.signRequest, using: dependencies)
     }
-    
+
     // MARK: - Authentication
-    
+
     fileprivate static func signatureHeaders(
         _ db: Database,
         url: URL,
@@ -1311,20 +1311,20 @@ public enum OpenGroupAPI {
         let method: String = method.rawValue
         let timestamp: Int = Int(floor(dependencies.dateNow.timeIntervalSince1970))
         let serverPublicKeyData: Data = Data(hex: serverPublicKey)
-        
+
         guard
             !serverPublicKeyData.isEmpty,
             let nonce: [UInt8] = dependencies.crypto.generate(.randomBytes(16)),
             let timestampBytes: [UInt8] = "\(timestamp)".data(using: .ascii).map({ Array($0) })
         else { throw OpenGroupAPIError.signingFailed }
-        
+
         /// Get a hash of any body content
         let bodyHash: [UInt8]? = {
             guard let body: Data = body else { return nil }
-            
+
             return dependencies.crypto.generate(.hash(message: body.bytes, length: 64))
         }()
-        
+
         /// Generate the signature message
         /// "ServerPubkey || Nonce || Timestamp || Method || Path || Blake2b Hash(Body)
         ///     `ServerPubkey`
@@ -1339,7 +1339,7 @@ public enum OpenGroupAPI {
             .appending(contentsOf: method.bytes)
             .appending(contentsOf: path.bytes)
             .appending(contentsOf: bodyHash ?? [])
-        
+
         /// Sign the above message
         let signResult: (publicKey: String, signature: [UInt8]) = try sign(
             db,
@@ -1349,7 +1349,7 @@ public enum OpenGroupAPI {
             forceBlinded: forceBlinded,
             using: dependencies
         )
-        
+
         return [
             HTTPHeader.sogsPubKey: signResult.publicKey,
             HTTPHeader.sogsTimestamp: "\(timestamp)",
@@ -1357,7 +1357,7 @@ public enum OpenGroupAPI {
             HTTPHeader.sogsSignature: signResult.signature.toBase64()
         ]
     }
-    
+
     /// Sign a message to be sent to SOGS (handles both un-blinded and blinded signing based on the server capabilities)
     private static func sign(
         _ db: Database,
@@ -1375,7 +1375,7 @@ public enum OpenGroupAPI {
                 .asRequest(of: String.self)
                 .fetchOne(db)
         else { throw OpenGroupAPIError.signingFailed }
-        
+
         let capabilities: Set<Capability.Variant> = (try? Capability
             .select(.variant)
             .filter(Capability.Columns.openGroupServer == serverName.lowercased())
@@ -1413,7 +1413,7 @@ public enum OpenGroupAPI {
                     publicKey: SessionId(.unblinded, publicKey: userEdKeyPair.publicKey).hexString,
                     signature: signatureResult
                 )
-                
+
             // Default to using the 'standard' key
             default:
                 guard
@@ -1422,14 +1422,14 @@ public enum OpenGroupAPI {
                         .signatureXed25519(data: messageBytes, curve25519PrivateKey: userKeyPair.secretKey)
                     )
                 else { throw OpenGroupAPIError.signingFailed }
-                
+
                 return (
                     publicKey: SessionId(.standard, publicKey: userKeyPair.publicKey).hexString,
                     signature: signatureResult
                 )
         }
     }
-    
+
     /// Sign a request to be sent to SOGS (handles both un-blinded and blinded signing based on the server capabilities)
     private static func signRequest<R>(
         _ db: Database,
@@ -1440,7 +1440,7 @@ public enum OpenGroupAPI {
             let url: URL = preparedRequest.request.url,
             let target: Network.OpenGroupAPITarget<OpenGroupAPI.Endpoint> = preparedRequest.target as? Network.OpenGroupAPITarget<OpenGroupAPI.Endpoint>
         else { throw OpenGroupAPIError.signingFailed }
-        
+
         var updatedRequest: URLRequest = preparedRequest.request
         updatedRequest.allHTTPHeaderFields = (preparedRequest.request.allHTTPHeaderFields ?? [:])
             .updated(
@@ -1455,12 +1455,12 @@ public enum OpenGroupAPI {
                     using: dependencies
                 )
             )
-        
+
         return updatedRequest
     }
-    
+
     // MARK: - Convenience
-    
+
     /// Takes the request information and generates a `PreparedRequest<R, Endpoint>` pbject which is ready for sending to the API, this
     /// method is mainly here so we can separate the preparation of a request, which requires access to the database for signing, from the
     /// actual sending of the reuqest to ensure we don't run into any unexpected blocking of the database write thread

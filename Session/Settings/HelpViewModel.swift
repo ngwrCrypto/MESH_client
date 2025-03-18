@@ -10,34 +10,34 @@ import SessionUtilitiesKit
 
 class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTableSource {
     typealias TableItem = Section
-    
+
     public let dependencies: Dependencies
     public let navigatableState: NavigatableState = NavigatableState()
     public let state: TableDataState<Section, TableItem> = TableDataState()
     public let observableState: ObservableTableSourceState<Section, TableItem> = ObservableTableSourceState()
-    
+
     // MARK: - Initialization
-    
+
     init(using dependencies: Dependencies = Dependencies()) {
         self.dependencies = dependencies
     }
-    
+
     // MARK: - Section
-    
+
     public enum Section: SessionTableSection {
         case report
         case translate
         case feedback
         case faq
         case support
-        
+
         var style: SessionTableSectionStyle { .padding }
     }
-    
+
     // MARK: - Content
-    
+
     let title: String = "sessionHelp".localized()
-    
+
     lazy var observation: TargetObservation = [
         SectionModel(
             model: .report,
@@ -55,7 +55,7 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
                 )
             ]
         ),
-        SectionModel(
+        /* SectionModel(
             model: .translate,
             elements: [
                 SessionCell.Info(
@@ -72,12 +72,12 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
                         guard let url: URL = URL(string: "https://getsession.org/translate") else {
                             return
                         }
-                        
+
                         UIApplication.shared.open(url)
                     }
                 )
             ]
-        ),
+        ), */
         SectionModel(
             model: .feedback,
             elements: [
@@ -93,7 +93,7 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
                         guard let url: URL = URL(string: "https://getsession.org/survey") else {
                             return
                         }
-                        
+
                         UIApplication.shared.open(url)
                     }
                 )
@@ -114,7 +114,7 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
                         guard let url: URL = URL(string: "https://getsession.org/faq") else {
                             return
                         }
-                        
+
                         UIApplication.shared.open(url)
                     }
                 )
@@ -135,16 +135,16 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
                         guard let url: URL = URL(string: "https://sessionapp.zendesk.com/hc/en-us") else {
                             return
                         }
-                        
+
                         UIApplication.shared.open(url)
                     }
                 )
             ]
         )
     ]
-    
+
     // MARK: - Functions
-    
+
     public static func shareLogs(
         viewControllerToDismiss: UIViewController? = nil,
         targetView: UIView? = nil,
@@ -156,7 +156,7 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
             Singleton.hasAppContext,
             let viewController: UIViewController = Singleton.appContext.frontmostViewController
         else { return }
-        
+
         #if targetEnvironment(simulator)
         // stringlint:ignore_start
         let modal: ConfirmationModal = ConfirmationModal(
@@ -192,7 +192,7 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
         )
         #endif
     }
-    
+
     private static func shareLogsInternal(
         viewControllerToDismiss: UIViewController? = nil,
         targetView: UIView? = nil,
@@ -201,20 +201,20 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
     ) {
         Log.info("[Version] \(SessionApp.versionInfo)")
         Log.flush()
-        
+
         guard
             let latestLogFilePath: String = Log.logFilePath(),
             Singleton.hasAppContext,
             let viewController: UIViewController = Singleton.appContext.frontmostViewController
         else { return }
-        
+
         let showShareSheet: () -> () = {
             let shareVC = UIActivityViewController(
                 activityItems: [ URL(fileURLWithPath: latestLogFilePath) ],
                 applicationActivities: nil
             )
             shareVC.completionWithItemsHandler = { _, _, _, _ in onShareComplete?() }
-            
+
             if UIDevice.current.isIPad {
                 shareVC.excludedActivityTypes = []
                 shareVC.popoverPresentationController?.permittedArrowDirections = (targetView != nil ? [.up] : [])
@@ -223,7 +223,7 @@ class HelpViewModel: SessionTableViewModel, NavigatableStateHolder, ObservableTa
             }
             viewController.present(shareVC, animated: animated, completion: nil)
         }
-        
+
         guard let viewControllerToDismiss: UIViewController = viewControllerToDismiss else {
             showShareSheet()
             return

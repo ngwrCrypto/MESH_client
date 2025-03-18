@@ -10,7 +10,7 @@ internal enum Theme_OceanLight: ThemeColors {
         .black: .black,
         .clear: .clear,
         .primary: .primary,
-        .defaultPrimary: Theme.PrimaryColor.blue.color,
+        .defaultPrimary: .primary,
         .warning: .warning,
         .danger: .dangerLight,
         .disabled: .disabledLight,
@@ -19,17 +19,17 @@ internal enum Theme_OceanLight: ThemeColors {
         .textPrimary: .oceanLight1,
         .textSecondary: .oceanLight2,
         .borderSeparator: .oceanLight3,
-        
+
         // Path
         .path_connected: .pathConnected,
         .path_connecting: .pathConnecting,
         .path_error: .pathError,
         .path_unknown: .oceanLight5,
-    
+
         // TextBox
         .textBox_background: .oceanLight7,
         .textBox_border: .oceanLight3,
-    
+
         // MessageBubble
         .messageBubble_outgoingBackground: .primary,
         .messageBubble_incomingBackground: .oceanLight4,
@@ -43,7 +43,7 @@ internal enum Theme_OceanLight: ThemeColors {
         .menuButton_icon: .white,
         .menuButton_outerShadow: .black,
         .menuButton_innerShadow: .white,
-        
+
         // RadioButton
         .radioButton_selectedBackground: .primary,
         .radioButton_unselectedBackground: .clear,
@@ -52,39 +52,39 @@ internal enum Theme_OceanLight: ThemeColors {
         .radioButton_disabledSelectedBackground: .disabledLight,
         .radioButton_disabledUnselectedBackground: .clear,
         .radioButton_disabledBorder: .disabledLight,
-        
+
         // SessionButton
-        .sessionButton_text: .oceanLight1,
-        .sessionButton_background: .clear,
-        .sessionButton_highlight: .oceanLight1.withAlphaComponent(0.1),
-        .sessionButton_border: .oceanLight1,
-        .sessionButton_filledText: .oceanLight7,
-        .sessionButton_filledBackground: .oceanLight1,
-        .sessionButton_filledHighlight: .oceanLight2,
+        .sessionButton_text: .primary,
+        .sessionButton_background: .oceanLight7,
+        .sessionButton_highlight: .oceanLight6.withAlphaComponent(0.3),
+        .sessionButton_border: .oceanLight3,
+        .sessionButton_filledText: .oceanLight1,
+        .sessionButton_filledBackground: .oceanLight7,
+        .sessionButton_filledHighlight: .oceanLight3,
         .sessionButton_destructiveText: .dangerLight,
         .sessionButton_destructiveBackground: .clear,
         .sessionButton_destructiveHighlight: .dangerLight.withAlphaComponent(0.3),
         .sessionButton_destructiveBorder: .dangerLight,
-        .sessionButton_primaryFilledText: .black,
-        .sessionButton_primaryFilledBackground: .primary,
-        
+        .sessionButton_primaryFilledText: .primary,
+        .sessionButton_primaryFilledBackground: .oceanLight7,
+
         // SolidButton
         .solidButton_background: .oceanLight5,
-        
+
         // Settings
         .settings_tertiaryAction: .oceanLight1,
         .settings_tabBackground: .oceanLight6,
-        
+
         // Appearance
         .appearance_sectionBackground: .oceanLight7,
         .appearance_buttonBackground: .oceanLight7,
-        
+
         // Alert
         .alert_text: .oceanLight0,
         .alert_background: .oceanLight7,
         .alert_buttonBackground: .oceanLight7,
         .toast_background: .oceanLight5,
-        
+
         // ConversationButton
         .conversationButton_background: .oceanLight7,
         .conversationButton_unreadBackground: .oceanLight6,
@@ -95,43 +95,43 @@ internal enum Theme_OceanLight: ThemeColors {
         .conversationButton_swipeSecondary: .oceanLight2,
         .conversationButton_swipeTertiary: Theme.PrimaryColor.orange.color,
         .conversationButton_swipeRead: .primary,
-        
+
         // InputButton
         .inputButton_background: .oceanLight5,
-        
+
         // ContextMenu
         .contextMenu_background: .oceanLight7,
         .contextMenu_highlight: .primary,
         .contextMenu_text: .oceanLight0,
         .contextMenu_textHighlight: .oceanLight0,
-        
+
         // Call
         .callAccept_background: Theme.PrimaryColor.green.color,
         .callDecline_background: .dangerLight,
-        
+
         // Reactions
         .reactions_contextBackground: .oceanLight7,
         .reactions_contextMoreBackground: .oceanLight6,
-        
+
         // NewConversation
         .newConversation_background: .oceanLight7,
-        
+
         // Profile
         .profileIcon: .primary,
         .profileIcon_greenPrimaryColor: .primary,
         .profileIcon_background: .oceanLight1,
-        
+
         // Unread Marker
         .unreadMarker: .black
     ]
-    
+
     static let themeSwiftUI: [ThemeValue: Color] = [
         // General
         .white: .white,
         .black: .black,
         .clear: .clear,
         .primary: .primary,
-        .defaultPrimary: Theme.PrimaryColor.blue.colorSwiftUI,
+        .defaultPrimary: .primary,
         .warning: .warning,
         .danger: .dangerLight,
         .disabled: .disabledLight,
@@ -140,17 +140,17 @@ internal enum Theme_OceanLight: ThemeColors {
         .textPrimary: .oceanLight1,
         .textSecondary: .oceanLight2,
         .borderSeparator: .oceanLight3,
-        
+
         // Path
         .path_connected: .pathConnected,
         .path_connecting: .pathConnecting,
         .path_error: .pathError,
         .path_unknown: .oceanLight5,
-    
+
         // TextBox
         .textBox_background: .oceanLight7,
         .textBox_border: .oceanLight3,
-    
+
         // MessageBubble
         .messageBubble_outgoingBackground: .primary,
         .messageBubble_incomingBackground: .oceanLight4,
@@ -164,7 +164,7 @@ internal enum Theme_OceanLight: ThemeColors {
         .menuButton_icon: .white,
         .menuButton_outerShadow: .black,
         .menuButton_innerShadow: .white,
-        
+
         // RadioButton
         .radioButton_selectedBackground: .primary,
         .radioButton_unselectedBackground: .clear,
@@ -173,39 +173,39 @@ internal enum Theme_OceanLight: ThemeColors {
         .radioButton_disabledSelectedBackground: .disabledLight,
         .radioButton_disabledUnselectedBackground: .clear,
         .radioButton_disabledBorder: .disabledLight,
-        
+
         // SessionButton
-        .sessionButton_text: .oceanLight1,
-        .sessionButton_background: .clear,
-        .sessionButton_highlight: .oceanLight1.opacity(0.1),
-        .sessionButton_border: .oceanLight1,
-        .sessionButton_filledText: .oceanLight7,
-        .sessionButton_filledBackground: .oceanLight1,
-        .sessionButton_filledHighlight: .oceanLight2,
+        .sessionButton_text: .primary,
+        .sessionButton_background: .oceanLight7,
+        .sessionButton_highlight: .oceanLight6.opacity(0.3),
+        .sessionButton_border: .oceanLight3,
+        .sessionButton_filledText: .oceanLight1,
+        .sessionButton_filledBackground: .oceanLight7,
+        .sessionButton_filledHighlight: .oceanLight3,
         .sessionButton_destructiveText: .dangerLight,
         .sessionButton_destructiveBackground: .clear,
         .sessionButton_destructiveHighlight: .dangerLight.opacity(0.3),
         .sessionButton_destructiveBorder: .dangerLight,
-        .sessionButton_primaryFilledText: .black,
-        .sessionButton_primaryFilledBackground: .primary,
-        
+        .sessionButton_primaryFilledText: .primary,
+        .sessionButton_primaryFilledBackground: .oceanLight7,
+
         // SolidButton
         .solidButton_background: .oceanLight5,
-        
+
         // Settings
         .settings_tertiaryAction: .oceanLight1,
         .settings_tabBackground: .oceanLight6,
-        
+
         // Appearance
         .appearance_sectionBackground: .oceanLight7,
         .appearance_buttonBackground: .oceanLight7,
-        
+
         // Alert
         .alert_text: .oceanLight0,
         .alert_background: .oceanLight7,
         .alert_buttonBackground: .oceanLight7,
         .toast_background: .oceanLight5,
-        
+
         // ConversationButton
         .conversationButton_background: .oceanLight7,
         .conversationButton_unreadBackground: .oceanLight6,
@@ -216,32 +216,32 @@ internal enum Theme_OceanLight: ThemeColors {
         .conversationButton_swipeSecondary: .oceanLight2,
         .conversationButton_swipeTertiary: Theme.PrimaryColor.orange.colorSwiftUI,
         .conversationButton_swipeRead: .primary,
-        
+
         // InputButton
         .inputButton_background: .oceanLight5,
-        
+
         // ContextMenu
         .contextMenu_background: .oceanLight7,
         .contextMenu_highlight: .primary,
         .contextMenu_text: .oceanLight0,
         .contextMenu_textHighlight: .oceanLight0,
-        
+
         // Call
         .callAccept_background: Theme.PrimaryColor.green.colorSwiftUI,
         .callDecline_background: .dangerLight,
-        
+
         // Reactions
         .reactions_contextBackground: .oceanLight7,
         .reactions_contextMoreBackground: .oceanLight6,
-        
+
         // NewConversation
         .newConversation_background: .oceanLight7,
-        
+
         // Profile
         .profileIcon: .primary,
         .profileIcon_greenPrimaryColor: .primary,
         .profileIcon_background: .oceanLight1,
-        
+
         // Unread Marker
         .unreadMarker: .black
     ]
