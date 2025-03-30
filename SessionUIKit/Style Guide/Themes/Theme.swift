@@ -11,9 +11,14 @@ public enum Theme: String, CaseIterable, Codable, EnumStringSetting {
     case classicLight = "classic_light"
     case oceanDark = "ocean_dark"
     case oceanLight = "ocean_light"
-    
+
     // MARK: - Properties
-    
+
+    // Returns all themes except classicLight
+    public static var availableCases: [Theme] {
+        return Theme.allCases.filter { $0 != .classicLight }
+    }
+
     public var title: String {
         switch self {
         case .classicDark: return "appearanceThemesClassicDark".localized()
@@ -22,28 +27,28 @@ public enum Theme: String, CaseIterable, Codable, EnumStringSetting {
         case .oceanLight: return "appearanceThemesOceanLight".localized()
         }
     }
-    
+
     public var interfaceStyle: UIUserInterfaceStyle {
         switch self {
             case .classicDark, .oceanDark: return .dark
             case .classicLight, .oceanLight: return .light
         }
     }
-    
+
     public var statusBarStyle: UIStatusBarStyle {
         switch self {
             case .classicDark, .oceanDark: return .lightContent
             case .classicLight, .oceanLight: return .darkContent
         }
     }
-    
+
     public var keyboardAppearance: UIKeyboardAppearance {
         switch self {
             case .classicDark, .oceanDark: return .dark
             case .classicLight, .oceanLight: return .default
         }
     }
-    
+
     private var colors: [ThemeValue: UIColor] {
         switch self {
             case .classicDark: return Theme_ClassicDark.theme
@@ -52,21 +57,21 @@ public enum Theme: String, CaseIterable, Codable, EnumStringSetting {
             case .oceanLight: return Theme_OceanLight.theme
         }
     }
-    
+
     public func color(for value: ThemeValue) -> UIColor? {
         switch value {
             case .value(let value, let alpha): return color(for: value)?.withAlphaComponent(alpha)
-            
+
             case .highlighted(let value, let alwaysDarken):
                 switch (self.interfaceStyle, alwaysDarken) {
                     case (.light, _), (_, true): return color(for: value)?.brighten(by: -0.06)
                     default: return color(for: value)?.brighten(by: 0.08)
                 }
-            
+
             default: return colors[value]
         }
     }
-    
+
     private var colorsSwiftUI: [ThemeValue: Color] {
         switch self {
             case .classicDark: return Theme_ClassicDark.themeSwiftUI
@@ -75,17 +80,17 @@ public enum Theme: String, CaseIterable, Codable, EnumStringSetting {
             case .oceanLight: return Theme_OceanLight.themeSwiftUI
         }
     }
-    
+
     public func colorSwiftUI(for themeValue: ThemeValue) -> Color? {
         switch themeValue {
             case .value(let value, let alpha): return colorSwiftUI(for: value)?.opacity(alpha)
-            
+
             case .highlighted(let value, let alwaysDarken):
                 switch (self.interfaceStyle, alwaysDarken) {
                 case (.light, _), (_, true): return (colorSwiftUI(for: value)?.grayscale(0.06) as? Color)
                     default: return (colorSwiftUI(for: value)?.brightness(0.08) as? Color)
                 }
-            
+
             default: return colorsSwiftUI[themeValue]
         }
     }
@@ -108,15 +113,15 @@ public protocol ThemedNavigation {
 
 public indirect enum ThemeValue: Hashable {
     case value(ThemeValue, alpha: CGFloat)
-    
+
     // The 'highlighted' state of a colour will automatically lighten/darken a ThemeValue
     // by a fixed amount depending on wither the theme is dark/light mode
     case highlighted(ThemeValue, alwaysDarken: Bool)
-    
+
     public static func highlighted(_ value: ThemeValue) -> ThemeValue {
         return .highlighted(value, alwaysDarken: false)
     }
-    
+
     // General
     case white
     case black
@@ -131,17 +136,17 @@ public indirect enum ThemeValue: Hashable {
     case textPrimary
     case textSecondary
     case borderSeparator
-    
+
     // Path
     case path_connected
     case path_connecting
     case path_error
     case path_unknown
-    
+
     // TextBox
     case textBox_background
     case textBox_border
-    
+
     // MessageBubble
     case messageBubble_outgoingBackground
     case messageBubble_incomingBackground
@@ -149,13 +154,13 @@ public indirect enum ThemeValue: Hashable {
     case messageBubble_incomingText
     case messageBubble_overlay
     case messageBubble_deliveryStatus
-    
+
     // MenuButton
     case menuButton_background
     case menuButton_icon
     case menuButton_outerShadow
     case menuButton_innerShadow
-    
+
     // RadioButton
     case radioButton_selectedBackground
     case radioButton_unselectedBackground
@@ -164,7 +169,7 @@ public indirect enum ThemeValue: Hashable {
     case radioButton_disabledSelectedBackground
     case radioButton_disabledUnselectedBackground
     case radioButton_disabledBorder
-    
+
     // SessionButton
     case sessionButton_text
     case sessionButton_background
@@ -179,24 +184,24 @@ public indirect enum ThemeValue: Hashable {
     case sessionButton_destructiveBorder
     case sessionButton_primaryFilledText
     case sessionButton_primaryFilledBackground
-    
+
     // SolidButton
     case solidButton_background
-    
+
     // Settings
     case settings_tertiaryAction
     case settings_tabBackground
-    
+
     // Appearance
     case appearance_sectionBackground
     case appearance_buttonBackground
-    
+
     // Alert
     case alert_text
     case alert_background
     case alert_buttonBackground
     case toast_background
-    
+
     // ConversationButton
     case conversationButton_background
     case conversationButton_unreadBackground
@@ -207,32 +212,32 @@ public indirect enum ThemeValue: Hashable {
     case conversationButton_swipeSecondary
     case conversationButton_swipeTertiary
     case conversationButton_swipeRead
-    
+
     // InputButton
     case inputButton_background
-    
+
     // ContextMenu
     case contextMenu_background
     case contextMenu_highlight
     case contextMenu_text
     case contextMenu_textHighlight
-    
+
     // Call
     case callAccept_background
     case callDecline_background
-    
+
     // Reactions
     case reactions_contextBackground
     case reactions_contextMoreBackground
-    
+
     // NewConversation
     case newConversation_background
-    
+
     // Profile
     case profileIcon
     case profileIcon_greenPrimaryColor
     case profileIcon_background
-    
+
     // Unread Marker
     case unreadMarker
 }
@@ -243,11 +248,11 @@ public enum ForcedThemeValue {
     case color(UIColor)
     case primary(Theme.PrimaryColor, alpha: CGFloat?)
     case theme(Theme, color: ThemeValue, alpha: CGFloat?)
-    
+
     public static func primary(_ primary: Theme.PrimaryColor) -> ForcedThemeValue {
         return .primary(primary, alpha: nil)
     }
-    
+
     public static func theme(_ theme: Theme, color: ThemeValue) -> ForcedThemeValue {
         return .theme(theme, color: color, alpha: nil)
     }
@@ -258,14 +263,14 @@ public enum ForcedThemeValue {
 public enum ForcedThemeAttribute {
     case background(UIColor)
     case foreground(UIColor)
-    
+
     public var key: NSAttributedString.Key {
         switch self {
             case .background: return NSAttributedString.Key.backgroundColor
             case .foreground: return NSAttributedString.Key.foregroundColor
         }
     }
-    
+
     public var value: Any {
         switch self {
             case .background(let value): return value

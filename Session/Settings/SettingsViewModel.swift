@@ -15,7 +15,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
     public let editableState: EditableState<TableItem> = EditableState()
     public let state: TableDataState<Section, TableItem> = TableDataState()
     public let observableState: ObservableTableSourceState<Section, TableItem> = ObservableTableSourceState()
-    
+
     private let userSessionId: String
     private lazy var imagePickerHandler: ImagePickerHandler = ImagePickerHandler(
         onTransition: { [weak self] in self?.transitionToScreen($0, transitionType: $1) },
@@ -29,58 +29,62 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
     private var editedDisplayName: String?
     private var editProfilePictureModal: ConfirmationModal?
     private var editProfilePictureModalInfo: ConfirmationModal.Info?
-    
+
     // MARK: - Initialization
-    
+
     init(using dependencies: Dependencies = Dependencies()) {
         self.dependencies = dependencies
         self.userSessionId = getUserHexEncodedPublicKey(using: dependencies)
         self.oldDisplayName = Profile.fetchOrCreateCurrentUser(using: dependencies).name
     }
-    
+
     // MARK: - Config
-    
+
     enum NavState {
         case standard
         case editing
     }
-    
+
     enum NavItem: Equatable {
         case close
         case qrCode
         case cancel
         case done
     }
-    
+
     public enum Section: SessionTableSection {
         case profileInfo
         case sessionId
-        case menus
-        case footer
-        
+        case accountAndSecurity
+        case communication
+        case settings
+
         var title: String? {
             switch self {
                 case .sessionId: return "accountIdYours".localized()
+                case .accountAndSecurity: return "Account & Security"
+                case .communication: return "Chats & Notifications"
+                case .settings: return "Help & Support"
                 default: return nil
             }
         }
-        
+
         var style: SessionTableSectionStyle {
             switch self {
                 case .sessionId: return .titleSeparator
-                case .menus: return .padding
+                case .accountAndSecurity, .communication, .settings: return .titleRoundedContent
                 default: return .none
             }
         }
     }
-    
+
     public enum TableItem: Differentiable {
         case avatar
         case profileName
-        
+
         case sessionId
         case idActions
-        
+
         case path
         case privacy
         case notifications
@@ -93,9 +97,9 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
         case developerSettings
         case clearData
     }
-    
+
     // MARK: - Navigation
-    
+
     lazy var navState: AnyPublisher<NavState, Never> = {
         Publishers
             .CombineLatest(
@@ -129,7 +133,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                             accessibilityIdentifier: "Close button"
                         ) { [weak self] in self?.dismissScreen() }
                     ]
-                   
+
                 case .editing:
                     return [
                         SessionNavItem(
@@ -144,7 +148,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
             }
         }
         .eraseToAnyPublisher()
-    
+
     lazy var rightNavItems: AnyPublisher<[SessionNavItem<NavItem>], Never> = navState
         .map { [weak self, dependencies] navState -> [SessionNavItem<NavItem>] in
             switch navState {
@@ -165,7 +169,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                             }
                         )
                     ]
-                       
+
                     case .editing:
                         return [
                             SessionNavItem(
@@ -175,7 +179,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                             ) { [weak self] in
                                 let updatedNickname: String = (self?.editedDisplayName ?? "")
                                     .trimmingCharacters(in: .whitespacesAndNewlines)
-                                
+
                                 guard !updatedNickname.isEmpty else {
                                     self?.transitionToScreen(
                                         ConfirmationModal(
@@ -202,7 +206,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                     )
                                     return
                                 }
-                                
+
                                 self?.setIsEditing(false)
                                 self?.oldDisplayName = updatedNickname
                                 self?.updateProfile(displayNameUpdate: .currentUserUpdate(updatedNickname))
@@ -211,17 +215,17 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                 }
             }
             .eraseToAnyPublisher()
-    
+
     // MARK: - Content
-    
+
     private struct State: Equatable {
         let profile: Profile
         let developerModeEnabled: Bool
         let hideRecoveryPasswordPermanently: Bool
     }
-    
+
     let title: String = "sessionSettings".localized()
-    
+
     lazy var observation: TargetObservation = ObservationBuilder
         .databaseObservation(self) { [weak self, dependencies] db -> State in
             State(
@@ -231,124 +235,150 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
             )
         }
         .map { [weak self, dependencies] state -> [SectionModel] in
-            let profileInfo: SectionModel = SectionModel(
-                model: .profileInfo,
-                elements: [
-                    SessionCell.Info(
-                        id: .avatar,
-                        accessory: .profile(
-                            id: state.profile.id,
-                            size: .hero,
-                            profile: state.profile
-                        ),
-                        styling: SessionCell.StyleInfo(
-                            alignment: .centerHugging,
-                            customPadding: SessionCell.Padding(bottom: Values.smallSpacing),
-                            backgroundStyle: .noBackground
-                        ),
+            // Розділяємо складний вираз на простіші частини
+            let profileInfo = self?.createProfileInfoSection(profile: state.profile) ?? SectionModel(model: .profileInfo, elements: [])
+            let sessionId = self?.createSessionIdSection(profile: state.profile) ?? SectionModel(model: .sessionId, elements: [])
+            let menuSections = self?.createMenuSections() ?? []
+
+            return [profileInfo, sessionId] + menuSections
+        }
+
+    public lazy var footerView: AnyPublisher<UIView?, Never> = Just(VersionFooterView(numTaps: 9) { [dependencies] in
+           /// Do nothing if developer mode is already enabled
+            guard !dependencies.storage[.developerModeEnabled] else { return }
+
+           dependencies.storage.write { db in
+               db[.developerModeEnabled] = true
+           }
+    }).eraseToAnyPublisher()
+
+    // MARK: - Section Creators
+
+    private func createProfileInfoSection(profile: Profile) -> SectionModel {
+        return SectionModel(
+            model: .profileInfo,
+            elements: [
+                SessionCell.Info(
+                    id: .avatar,
+                    accessory: .profile(
+                        id: profile.id,
+                        size: .hero,
+                        profile: profile
+                    ),
+                    styling: SessionCell.StyleInfo(
+                        alignment: .centerHugging,
+                        customPadding: SessionCell.Padding(bottom: Values.smallSpacing),
+                        backgroundStyle: .noBackground
+                    ),
+                    accessibility: Accessibility(
+                        identifier: "User settings",
+                        label: "Profile picture"
+                    ),
+                    onTap: { [weak self] in
+                        self?.updateProfilePicture(currentFileName: profile.profilePictureFileName)
+                    }
+                ),
+                SessionCell.Info(
+                    id: .profileName,
+                    title: SessionCell.TextInfo(
+                        profile.displayName(),
+                        font: .titleLarge,
+                        alignment: .center,
+                        interaction: .editable
+                    ),
+                    styling: SessionCell.StyleInfo(
+                        customPadding: SessionCell.Padding(top: Values.smallSpacing),
+                        backgroundStyle: .noBackground
+                    ),
+                    accessibility: Accessibility(
+                        identifier: "Username",
+                        label: profile.displayName()
+                    ),
+                    onTap: { [weak self] in self?.setIsEditing(true) }
+                )
+            ]
+        )
+    }
+
+    private func createSessionIdSection(profile: Profile) -> SectionModel {
+        return SectionModel(
+            model: .sessionId,
+            elements: [
+                SessionCell.Info(
+                    id: .sessionId,
+                    title: SessionCell.TextInfo(
+                        profile.id,
+                        font: .monoLarge,
+                        alignment: .center,
+                        interaction: .copy
+                    ),
+                    styling: SessionCell.StyleInfo(
+                        customPadding: SessionCell.Padding(bottom: Values.smallSpacing),
+                        backgroundStyle: .noBackground
+                    ),
+                    accessibility: Accessibility(
+                        identifier: "Account ID",
+                        label: profile.id
+                    )
+                ),
+                SessionCell.Info(
+                    id: .idActions,
+                    leftAccessory: .button(
+                        style: .bordered,
+                        title: "share".localized(),
                         accessibility: Accessibility(
-                            identifier: "User settings",
-                            label: "Profile picture"
+                            identifier: "Share button",
+                            label: "Share button"
                         ),
-                        onTap: {
-                            self?.updateProfilePicture(currentFileName: state.profile.profilePictureFileName)
+                        run: { [weak self] _ in
+                            self?.shareSessionId(profile.id)
                         }
                     ),
-                    SessionCell.Info(
-                        id: .profileName,
-                        title: SessionCell.TextInfo(
-                            state.profile.displayName(),
-                            font: .titleLarge,
-                            alignment: .center,
-                            interaction: .editable
-                        ),
-                        styling: SessionCell.StyleInfo(
-                            customPadding: SessionCell.Padding(top: Values.smallSpacing),
-                            backgroundStyle: .noBackground
-                        ),
+                    rightAccessory: .button(
+                        style: .bordered,
+                        title: "copy".localized(),
                         accessibility: Accessibility(
-                            identifier: "Username",
-                            label: state.profile.displayName()
+                            identifier: "Copy button",
+                            label: "Copy button"
                         ),
-                        onTap: { self?.setIsEditing(true) }
-                    )
-                ]
-            )
-            let sessionId: SectionModel = SectionModel(
-                model: .sessionId,
-                elements: [
-                    SessionCell.Info(
-                        id: .sessionId,
-                        title: SessionCell.TextInfo(
-                            state.profile.id,
-                            font: .monoLarge,
-                            alignment: .center,
-                            interaction: .copy
-                        ),
-                        styling: SessionCell.StyleInfo(
-                            customPadding: SessionCell.Padding(bottom: Values.smallSpacing),
-                            backgroundStyle: .noBackground
-                        ),
-                        accessibility: Accessibility(
-                            identifier: "Account ID",
-                            label: state.profile.id
-                        )
+                        run: { [weak self] button in
+                            self?.copySessionId(profile.id, button: button)
+                        }
                     ),
-                    SessionCell.Info(
-                        id: .idActions,
-                        leftAccessory: .button(
-                            style: .bordered,
-                            title: "share".localized(),
-                            accessibility: Accessibility(
-                                identifier: "Share button",
-                                label: "Share button"
-                            ),
-                            run: { _ in
-                                self?.shareSessionId(state.profile.id)
-                            }
+                    styling: SessionCell.StyleInfo(
+                        customPadding: SessionCell.Padding(
+                            top: Values.smallSpacing,
+                            leading: 0,
+                            trailing: 0
                         ),
-                        rightAccessory: .button(
-                            style: .bordered,
-                            title: "copy".localized(),
-                            accessibility: Accessibility(
-                                identifier: "Copy button",
-                                label: "Copy button"
-                            ),
-                            run: { button in
-                                self?.copySessionId(state.profile.id, button: button)
-                            }
-                        ),
-                        styling: SessionCell.StyleInfo(
-                            customPadding: SessionCell.Padding(
-                                top: Values.smallSpacing,
-                                leading: 0,
-                                trailing: 0
-                            ),
-                            backgroundStyle: .noBackground
-                        )
+                        backgroundStyle: .noBackground
                     )
-                ]
-            )
-            let menus: SectionModel = SectionModel(
-                model: .menus,
+                )
+            ]
+        )
+    }
+
+    private func createMenuSections() -> [SectionModel] {
+        return [
+            SectionModel(
+                model: .accountAndSecurity,
                 elements: [
                     SessionCell.Info(
                         id: .path,
-                        leftAccessory: .customView(hashValue: "PathStatusView") {   // stringlint:ignore
-                            // Need to ensure this view is the same size as the icons so
-                            // wrap it in a larger view
+                        leftAccessory: .customView(hashValue: "PathStatusView") {
                             let result: UIView = UIView()
                             let pathView: PathStatusView = PathStatusView(size: .large)
                             result.addSubview(pathView)
-                            
+
+                            // Restore original dimensions and centering
                             result.set(.width, to: IconSize.medium.size)
                             result.set(.height, to: IconSize.medium.size)
                             pathView.center(in: result)
-                            
+
                             return result
                         },
                         title: "onionRoutingPath".localized(),
-                        onTap: { self?.transitionToScreen(PathVC()) }
+                        onTap: { [weak self] in self?.transitionToScreen(PathVC()) }
                     ),
                     SessionCell.Info(
                         id: .privacy,
@@ -357,12 +387,28 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                 .withRenderingMode(.alwaysTemplate)
                         ),
                         title: "sessionPrivacy".localized(),
-                        onTap: {
+                        onTap: { [weak self] in
                             self?.transitionToScreen(
                                 SessionTableViewController(viewModel: PrivacySettingsViewModel())
                             )
                         }
                     ),
+                    SessionCell.Info(
+                        id: .appearance,
+                        leftAccessory: .icon(
+                            UIImage(named: "icon_apperance")?
+                                .withRenderingMode(.alwaysTemplate)
+                        ),
+                        title: "sessionAppearance".localized(),
+                        onTap: { [weak self] in
+                            self?.transitionToScreen(AppearanceViewController())
+                        }
+                    )
+                ]
+            ),
+            SectionModel(
+                model: .communication,
+                elements: [
                     SessionCell.Info(
                         id: .notifications,
                         leftAccessory: .icon(
@@ -370,7 +416,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                 .withRenderingMode(.alwaysTemplate)
                         ),
                         title: "sessionNotifications".localized(),
-                        onTap: {
+                        onTap: { [weak self] in
                             self?.transitionToScreen(
                                 SessionTableViewController(viewModel: NotificationSettingsViewModel())
                             )
@@ -383,7 +429,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                 .withRenderingMode(.alwaysTemplate)
                         ),
                         title: "sessionConversations".localized(),
-                        onTap: {
+                        onTap: { [weak self] in
                             self?.transitionToScreen(
                                 SessionTableViewController(viewModel: ConversationSettingsViewModel())
                             )
@@ -396,21 +442,10 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                 .withRenderingMode(.alwaysTemplate)
                         ),
                         title: "sessionMessageRequests".localized(),
-                        onTap: {
+                        onTap: { [weak self] in
                             self?.transitionToScreen(
                                 SessionTableViewController(viewModel: MessageRequestsViewModel())
                             )
-                        }
-                    ),
-                    SessionCell.Info(
-                        id: .appearance,
-                        leftAccessory: .icon(
-                            UIImage(named: "icon_apperance")?
-                                .withRenderingMode(.alwaysTemplate)
-                        ),
-                        title: "sessionAppearance".localized(),
-                        onTap: {
-                            self?.transitionToScreen(AppearanceViewController())
                         }
                     ),
                     SessionCell.Info(
@@ -420,53 +455,21 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                 .withRenderingMode(.alwaysTemplate)
                         ),
                         title: "sessionInviteAFriend".localized(),
-                        onTap: {
-                            let invitation: String = "accountIdShare"
-                                .put(key: "app_name", value: Constants.app_name)
-                                .put(key: "account_id", value: state.profile.id)
-                                .put(key: "session_download_url", value: Constants.session_download_url)
-                                .localized()
-                            
-                            self?.transitionToScreen(
-                                UIActivityViewController(
-                                    activityItems: [ invitation ],
-                                    applicationActivities: nil
-                                ),
-                                transitionType: .present
-                            )
-                        }
-                    ),
-                    (
-                        state.hideRecoveryPasswordPermanently ? nil :
-                        SessionCell.Info(
-                            id: .recoveryPhrase,
-                            leftAccessory: .icon(
-                                UIImage(named: "SessionShield")?
-                                    .withRenderingMode(.alwaysTemplate)
-                            ),
-                            title: "sessionRecoveryPassword".localized(),
-                            accessibility: Accessibility(
-                                identifier: "Recovery password menu item",
-                                label: "Recovery password menu item"
-                            ),
-                            onTap: {
-                                if let recoveryPasswordView: RecoveryPasswordScreen = try? RecoveryPasswordScreen() {
-                                    let viewController: SessionHostingViewController = SessionHostingViewController(rootView: recoveryPasswordView)
-                                    viewController.setNavBarTitle("sessionRecoveryPassword".localized())
-                                    self?.transitionToScreen(viewController)
-                                } else {
-                                    let targetViewController: UIViewController = ConfirmationModal(
-                                        info: ConfirmationModal.Info(
-                                            title: "theError".localized(),
-                                            body: .text("recoveryPasswordErrorLoad".localized()),
-                                            cancelTitle: "okay".localized(),
-                                            cancelStyle: .alert_text
-                                        )
-                                    )
-                                    self?.transitionToScreen(targetViewController, transitionType: .present)
-                                }
-                            }
-                        )
+                        onTap: { [weak self] in self?.showInviteSheet() }
+                    )
+                ]
+            ),
+            SectionModel(
+                model: .settings,
+                elements: [
+                    SessionCell.Info(
+                        id: .recoveryPhrase,
+                        leftAccessory: .icon(
+                            UIImage(named: "SessionShield")?
+                                .withRenderingMode(.alwaysTemplate)
+                        ),
+                        title: "sessionRecoveryPassword".localized(),
+                        onTap: { [weak self] in self?.showRecoveryPhrase() }
                     ),
                     SessionCell.Info(
                         id: .help,
@@ -475,27 +478,11 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                 .withRenderingMode(.alwaysTemplate)
                         ),
                         title: "sessionHelp".localized(),
-                        onTap: {
+                        onTap: { [weak self] in
                             self?.transitionToScreen(
                                 SessionTableViewController(viewModel: HelpViewModel())
                             )
                         }
-                    ),
-                    (!state.developerModeEnabled ? nil :
-                        SessionCell.Info(
-                            id: .developerSettings,
-                            leftAccessory: .icon(
-                                UIImage(systemName: "wrench.and.screwdriver")?
-                                    .withRenderingMode(.alwaysTemplate)
-                            ),
-                            title: "Developer Settings",    // stringlint:ignore
-                            styling: SessionCell.StyleInfo(tintColor: .warning),
-                            onTap: {
-                                self?.transitionToScreen(
-                                    SessionTableViewController(viewModel: DeveloperSettingsViewModel(using: dependencies))
-                                )
-                            }
-                        )
                     ),
                     SessionCell.Info(
                         id: .clearData,
@@ -504,28 +491,15 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                 .withRenderingMode(.alwaysTemplate)
                         ),
                         title: "sessionClearData".localized(),
-                        styling: SessionCell.StyleInfo(tintColor: .danger),
-                        onTap: {
-                            self?.transitionToScreen(NukeDataModal(), transitionType: .present)
-                        }
+                        onTap: { [weak self] in self?.showClearDataModal() }
                     )
-                ].compactMap { $0 }
+                ]
             )
-            
-            return [profileInfo, sessionId, menus]
-        }
-    
-    public lazy var footerView: AnyPublisher<UIView?, Never> = Just(VersionFooterView(numTaps: 9) { [dependencies] in
-           /// Do nothing if developer mode is already enabled
-            guard !dependencies.storage[.developerModeEnabled] else { return }
-           
-           dependencies.storage.write { db in
-               db[.developerModeEnabled] = true
-           }
-    }).eraseToAnyPublisher()
-    
+        ]
+    }
+
     // MARK: - Functions
-    
+
     private func updateProfilePicture(currentFileName: String?) {
         let existingImageData: Data? = ProfileManager
             .profileAvatar(id: self.userSessionId)
@@ -561,7 +535,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
             }
         )
         let modal: ConfirmationModal = ConfirmationModal(info: editProfilePictureModalInfo)
-            
+
         self.editProfilePictureModalInfo = editProfilePictureModalInfo
         self.editProfilePictureModal = modal
         self.transitionToScreen(modal, transitionType: .present)
@@ -569,7 +543,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
 
     fileprivate func updatedProfilePictureSelected(displayPictureUpdate: ProfileManager.DisplayPictureUpdate) {
         guard let info: ConfirmationModal.Info = self.editProfilePictureModalInfo else { return }
-        
+
         self.editProfilePictureModal?.updateContent(
             with: info.with(
                 body: .image(
@@ -598,7 +572,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
             )
         )
     }
-    
+
     private func showPhotoLibraryForAvatar() {
         Permissions.requestLibraryPermissionIfNeeded(isSavingMedia: false) { [weak self] in
             DispatchQueue.main.async {
@@ -606,12 +580,12 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                 picker.sourceType = .photoLibrary
                 picker.mediaTypes = [ "public.image" ]  // stringlint:ignore
                 picker.delegate = self?.imagePickerHandler
-                
+
                 self?.transitionToScreen(picker, transitionType: .present)
             }
         }
     }
-    
+
     fileprivate func updateProfile(
         displayNameUpdate: ProfileManager.DisplayNameUpdate = .none,
         displayPictureUpdate: ProfileManager.DisplayPictureUpdate = .none,
@@ -640,11 +614,11 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                                     case (.currentUserRemove, _): return "profileDisplayPictureRemoveError".localized()
                                     case (_, .avatarUploadMaxFileSizeExceeded):
                                         return "profileDisplayPictureSizeError".localized()
-                                    
+
                                     default: return "errorConnection".localized()
                                 }
                             }()
-                            
+
                             self?.transitionToScreen(
                                 ConfirmationModal(
                                     info: ConfirmationModal.Info(
@@ -662,19 +636,19 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                 }
             )
         }
-        
+
         self.transitionToScreen(viewController, transitionType: .present)
     }
-    
+
     private func copySessionId(_ sessionId: String, button: SessionButton?) {
         UIPasteboard.general.string = sessionId
-        
+
         guard let button: SessionButton = button else { return }
-        
+
         // Ensure we are on the main thread just in case
         DispatchQueue.main.async {
             button.isUserInteractionEnabled = false
-            
+
             UIView.transition(
                 with: button,
                 duration: 0.25,
@@ -685,7 +659,7 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
                 completion: { _ in
                     DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(4)) {
                         button.isUserInteractionEnabled = true
-                    
+
                         UIView.transition(
                             with: button,
                             duration: 0.25,
@@ -700,13 +674,51 @@ class SettingsViewModel: SessionTableViewModel, NavigationItemSource, Navigatabl
             )
         }
     }
-    
+
     private func shareSessionId(_ sessionId: String) {
         let shareVC = UIActivityViewController(
             activityItems: [ sessionId ],
             applicationActivities: nil
         )
-        
+
         self.transitionToScreen(shareVC, transitionType: .present)
+    }
+
+    private func showInviteSheet() {
+        let invitation: String = "accountIdShare"
+            .put(key: "app_name", value: Constants.app_name)
+            .put(key: "account_id", value: userSessionId)
+            .put(key: "session_download_url", value: Constants.session_download_url)
+            .localized()
+
+        self.transitionToScreen(
+            UIActivityViewController(
+                activityItems: [invitation],
+                applicationActivities: nil
+            ),
+            transitionType: .present
+        )
+    }
+
+    private func showRecoveryPhrase() {
+        if let recoveryPasswordView: RecoveryPasswordScreen = try? RecoveryPasswordScreen() {
+            let viewController: SessionHostingViewController = SessionHostingViewController(rootView: recoveryPasswordView)
+            viewController.setNavBarTitle("sessionRecoveryPassword".localized())
+            self.transitionToScreen(viewController)
+        } else {
+            let targetViewController: UIViewController = ConfirmationModal(
+                info: ConfirmationModal.Info(
+                    title: "theError".localized(),
+                    body: .text("recoveryPasswordErrorLoad".localized()),
+                    cancelTitle: "okay".localized(),
+                    cancelStyle: .alert_text
+                )
+            )
+            self.transitionToScreen(targetViewController, transitionType: .present)
+        }
+    }
+
+    private func showClearDataModal() {
+        self.transitionToScreen(NukeDataModal(), transitionType: .present)
     }
 }

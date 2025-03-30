@@ -8,7 +8,7 @@ import SessionSnodeKit
 
 public enum MessageReceiver {
     private static var lastEncryptionKeyPairRequest: [String: Date] = [:]
-    
+
     public static func parse(
         _ db: Database,
         data: Data,
@@ -28,7 +28,7 @@ public enum MessageReceiver {
         let openGroupWhisperTo: String?
         let threadVariant: SessionThread.Variant
         let threadIdGenerator: (Message) throws -> String
-        
+
         switch (origin.isConfigNamespace, origin) {
             // Config messages are custom-handled via 'libSession' so just return the data directly
             case (true, .swarm(let publicKey, let namespace, let serverHash, let serverTimestampMs, _)):
@@ -39,7 +39,7 @@ public enum MessageReceiver {
                     serverTimestampMs: serverTimestampMs,
                     data: data
                 )
-                
+
             case (_, .community(let openGroupId, let messageSender, let timestamp, let messageServerId, let messageWhisper, let messageWhisperMods, let messageWhisperTo)):
                 plaintext = data.removePadding()   // Remove the padding
                 sender = messageSender
@@ -53,10 +53,10 @@ public enum MessageReceiver {
                 threadIdGenerator = { message in
                     // Guard against control messages in open groups
                     guard message is VisibleMessage else { throw MessageReceiverError.invalidMessage }
-                    
+
                     return openGroupId
                 }
-                
+
             case (_, .openGroupInbox(let timestamp, let messageServerId, let serverPublicKey, let senderId, let recipientId)):
                 (plaintext, sender) = try dependencies.crypto.tryGenerate(
                     .plaintextWithSessionBlindingProtocol(
@@ -68,7 +68,7 @@ public enum MessageReceiver {
                         using: dependencies
                     )
                 )
-                
+
                 plaintext = plaintext.removePadding()   // Remove the padding
                 sentTimestamp = UInt64(floor(timestamp * 1000)) // Convert to ms for database consistency
                 serverHash = nil
@@ -78,7 +78,7 @@ public enum MessageReceiver {
                 openGroupWhisperTo = nil
                 threadVariant = .contact
                 threadIdGenerator = { _ in sender }
-                
+
             case (_, .swarm(let publicKey, let namespace, let swarmServerHash, _, _)):
                 switch namespace {
                     case .default:
@@ -89,7 +89,7 @@ public enum MessageReceiver {
                             SNLog("Failed to unwrap data for message from 'default' namespace.")
                             throw MessageReceiverError.invalidMessage
                         }
-                        
+
                         (plaintext, sender) = try dependencies.crypto.tryGenerate(
                             .plaintextWithSessionProtocol(
                                 db,
@@ -112,7 +112,7 @@ public enum MessageReceiver {
                                 default: return sender
                             }
                         }
-                        
+
                     case .legacyClosedGroup:
                         guard
                             let envelope: SNProtoEnvelope = try? MessageWrapper.unwrap(data: data),
@@ -122,14 +122,14 @@ public enum MessageReceiver {
                             SNLog("Failed to unwrap data for message from 'legacyClosedGroup' namespace.")
                             throw MessageReceiverError.invalidMessage
                         }
-                        
+
                         guard
                             let encryptionKeyPairs: [ClosedGroupKeyPair] = try? closedGroup.keyPairs
                                 .order(ClosedGroupKeyPair.Columns.receivedTimestamp.desc)
                                 .fetchAll(db),
                             !encryptionKeyPairs.isEmpty
                         else { throw MessageReceiverError.noGroupKeyPair }
-                        
+
                         // Loop through all known group key pairs in reverse order (i.e. try the latest key
                         // pair first (which'll more than likely be the one we want) but try older ones in
                         // case that didn't work)
@@ -137,7 +137,7 @@ public enum MessageReceiver {
                             guard let keyPair: ClosedGroupKeyPair = keyPairs.first else {
                                 throw (lastError ?? MessageReceiverError.decryptionFailed)
                             }
-                            
+
                             do {
                                 return try dependencies.crypto.tryGenerate(
                                     .plaintextWithSessionProtocolLegacyGroup(
@@ -154,11 +154,11 @@ public enum MessageReceiver {
                                 return try decrypt(keyPairs: Array(keyPairs.suffix(from: 1)), lastError: error)
                             }
                         }
-                        
+
                         (plaintext, sender) = try decrypt(keyPairs: encryptionKeyPairs)
                         plaintext = plaintext.removePadding()   // Remove the padding
                         sentTimestamp = envelope.timestamp
-                        
+
                         /// If we weren't given a `serverHash` then compute one locally using the same logic the swarm would
                         switch swarmServerHash.isEmpty {
                             case false: serverHash = swarmServerHash
@@ -167,26 +167,26 @@ public enum MessageReceiver {
                                     .messageServerHash(swarmPubkey: publicKey, namespace: namespace, data: data)
                                 ).defaulting(to: "")
                         }
-                        
+
                         openGroupServerMessageId = nil
                         openGroupWhisper = false
                         openGroupWhisperMods = false
                         openGroupWhisperTo = nil
                         threadVariant = .legacyGroup
                         threadIdGenerator = { _ in publicKey }
-                        
+
                     case .configUserProfile, .configContacts, .configConvoInfoVolatile, .configUserGroups:
                         throw MessageReceiverError.invalidConfigMessageHandling
-                        
+
                     case .configClosedGroupInfo:
                         throw MessageReceiverError.invalidConfigMessageHandling
-                        
+
                     case .all, .unknown:
                         SNLog("Couldn't process message due to invalid namespace.")
                         throw MessageReceiverError.unknownMessage
                 }
         }
-        
+
         let proto: SNProtoContent = try (customProto ?? Result(catching: { try SNProtoContent.parseData(plaintext) })
            .onFailure { SNLog("Couldn't parse proto due to error: \($0).") }
            .successOrThrow())
@@ -199,27 +199,27 @@ public enum MessageReceiver {
         message.openGroupWhisper = openGroupWhisper
         message.openGroupWhisperMods = openGroupWhisperMods
         message.openGroupWhisperTo = openGroupWhisperTo
-        
+
         // Ignore disappearing message settings in communities (in case of modified clients)
         if threadVariant != .community {
             message.attachDisappearingMessagesConfiguration(from: proto)
         }
-        
+
         // Don't process the envelope any further if the sender is blocked
         guard (try? Contact.fetchOne(db, id: sender))?.isBlocked != true || message.processWithBlockedSender else {
             throw MessageReceiverError.senderBlocked
         }
-        
+
         // Ignore self sends if needed
         guard message.isSelfSendValid || sender != userSessionId else {
             throw MessageReceiverError.selfSend
         }
-        
+
         // Guard against control messages in open groups
         guard !origin.isCommunity || message is VisibleMessage else {
             throw MessageReceiverError.invalidMessage
         }
-        
+
         // Validate
         guard
             message.isValid ||
@@ -227,7 +227,7 @@ public enum MessageReceiver {
         else {
             throw MessageReceiverError.invalidMessage
         }
-        
+
         return .standard(
             threadId: try threadIdGenerator(message),
             threadVariant: threadVariant,
@@ -241,9 +241,9 @@ public enum MessageReceiver {
             )
         )
     }
-    
+
     // MARK: - Handling
-    
+
     public static func handle(
         _ db: Database,
         threadId: String,
@@ -265,7 +265,7 @@ public enum MessageReceiver {
                 using: dependencies
             )
         else { throw MessageReceiverError.requiredThreadNotInConfig }
-        
+
         // Throw if the message is outdated and shouldn't be processed
         try throwIfMessageOutdated(
             db,
@@ -274,7 +274,7 @@ public enum MessageReceiver {
             threadVariant: threadVariant,
             using: dependencies
         )
-        
+
         MessageReceiver.updateContactDisappearingMessagesVersionIfNeeded(
             db,
             messageVariant: .init(from: message),
@@ -285,7 +285,7 @@ public enum MessageReceiver {
             ),
             using: dependencies
         )
-        
+
         switch message {
             case let message as ReadReceipt:
                 try MessageReceiver.handleReadReceipt(
@@ -293,7 +293,7 @@ public enum MessageReceiver {
                     message: message,
                     serverExpirationTimestamp: serverExpirationTimestamp
                 )
-                
+
             case let message as TypingIndicator:
                 try MessageReceiver.handleTypingIndicator(
                     db,
@@ -301,7 +301,7 @@ public enum MessageReceiver {
                     threadVariant: threadVariant,
                     message: message
                 )
-                
+
             case let message as ClosedGroupControlMessage:
                 try MessageReceiver.handleClosedGroupControlMessage(
                     db,
@@ -310,7 +310,7 @@ public enum MessageReceiver {
                     message: message,
                     using: dependencies
                 )
-                
+
             case let message as DataExtractionNotification:
                 try MessageReceiver.handleDataExtractionNotification(
                     db,
@@ -320,7 +320,7 @@ public enum MessageReceiver {
                     serverExpirationTimestamp: serverExpirationTimestamp,
                     using: dependencies
                 )
-                
+
             case let message as ExpirationTimerUpdate:
                 try MessageReceiver.handleExpirationTimerUpdate(
                     db,
@@ -331,7 +331,7 @@ public enum MessageReceiver {
                     proto: proto,
                     using: dependencies
                 )
-                
+
             case let message as UnsendRequest:
                 try MessageReceiver.handleUnsendRequest(
                     db,
@@ -340,7 +340,7 @@ public enum MessageReceiver {
                     message: message,
                     using: dependencies
                 )
-                
+
             case let message as CallMessage:
                 try MessageReceiver.handleCallMessage(
                     db,
@@ -349,28 +349,28 @@ public enum MessageReceiver {
                     message: message,
                     using: dependencies
                 )
-                
+
             case let message as MessageRequestResponse:
                 try MessageReceiver.handleMessageRequestResponse(
                     db,
                     message: message,
                     using: dependencies
                 )
-                
+
             case let message as VisibleMessage:
                 try MessageReceiver.handleVisibleMessage(
                     db,
                     threadId: threadId,
                     threadVariant: threadVariant,
-                    message: message, 
+                    message: message,
                     serverExpirationTimestamp: serverExpirationTimestamp,
                     associatedWithProto: proto,
                     using: dependencies
                 )
-            
+
             default: throw MessageReceiverError.unknownMessage
         }
-        
+
         // Perform any required post-handling logic
         try MessageReceiver.postHandleMessage(
             db,
@@ -380,7 +380,7 @@ public enum MessageReceiver {
             using: dependencies
         )
     }
-    
+
     public static func postHandleMessage(
         _ db: Database,
         threadId: String,
@@ -394,23 +394,23 @@ public enum MessageReceiver {
             case is ReadReceipt: break
             case is TypingIndicator: break
             case is UnsendRequest: break
-                
+
             case let message as ClosedGroupControlMessage:
                 // Only re-show a legacy group conversation if we are going to add a control text message
                 switch message.kind {
                     case .new, .encryptionKeyPair, .encryptionKeyPairRequest: return
                     default: break
                 }
-                
+
                 fallthrough
-            
+
             case is CallMessage:
                 if threadId == getUserHexEncodedPublicKey(db, using: dependencies) {
                     break
                 } else {
                     fallthrough
                 }
-                
+
             default:
                 // Only update the `shouldBeVisible` flag if the thread is currently not visible
                 // as we don't want to trigger a config update if not needed
@@ -420,7 +420,7 @@ public enum MessageReceiver {
                     .asRequest(of: Bool.self)
                     .fetchOne(db)
                     .defaulting(to: false)
-                
+
                 // Start the disappearing messages timer if needed
                 // For disappear after send, this is necessary so the message will disappear even if it is not read
                 if threadVariant != .community {
@@ -436,7 +436,7 @@ public enum MessageReceiver {
                 }
 
                 guard !isCurrentlyVisible else { return }
-                
+
                 try SessionThread
                     .filter(id: threadId)
                     .updateAllAndConfig(
@@ -447,7 +447,7 @@ public enum MessageReceiver {
                     )
         }
     }
-    
+
     public static func handleOpenGroupReactions(
         _ db: Database,
         threadId: String,
@@ -463,16 +463,16 @@ public enum MessageReceiver {
         else {
             throw MessageReceiverError.invalidMessage
         }
-        
+
         _ = try Reaction
             .filter(Reaction.Columns.interactionId == interactionId)
             .deleteAll(db)
-        
+
         for reaction in openGroupReactions {
             try reaction.with(interactionId: interactionId).insert(db)
         }
     }
-    
+
     public static func throwIfMessageOutdated(
         _ db: Database,
         message: Message,
@@ -485,7 +485,7 @@ public enum MessageReceiver {
             case is UnsendRequest: return // We should always process the removal of messages just in case
             default: break
         }
-        
+
         // Determine the state of the conversation and the validity of the message
         let currentUserPublicKey: String = getUserHexEncodedPublicKey(db, using: dependencies)
         let conversationVisibleInConfig: Bool = LibSession.conversationInConfig(
@@ -506,11 +506,11 @@ public enum MessageReceiver {
             }(),
             changeTimestampMs: (message.sentTimestamp.map { Int64($0) } ?? SnodeAPI.currentOffsetTimestampMs())
         )
-        
+
         // If the thread is visible or the message was sent more recently than the last config message (minus
         // buffer period) then we should process the message, if not then throw as the message is outdated
         guard !conversationVisibleInConfig && !canPerformChange else { return }
-        
+
         throw MessageReceiverError.outdatedMessage
     }
 }

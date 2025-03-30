@@ -6,7 +6,7 @@ import SessionMessagingKit
 
 public class ThemePreviewView: UIView {
     // MARK: - Components
-    
+
     private lazy var incomingMessagePreview: UIView = {
         let result: VisibleMessageCell = VisibleMessageCell()
         result.translatesAutoresizingMaskIntoConstraints = true
@@ -28,10 +28,10 @@ public class ThemePreviewView: UIView {
             showExpandedReactions: false,
             lastSearchText: nil
         )
-        
+
         return result
     }()
-    
+
     private lazy var outgoingMessagePreview: UIView = {
         let result: VisibleMessageCell = VisibleMessageCell()
         result.translatesAutoresizingMaskIntoConstraints = true
@@ -47,37 +47,37 @@ public class ThemePreviewView: UIView {
             showExpandedReactions: false,
             lastSearchText: nil
         )
-        
+
         return result
     }()
-    
+
     // MARK: - Initializtion
-    
+
     init() {
         super.init(frame: .zero)
-        
+
         setupUI()
     }
-    
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     // MARK: - Layout
-    
+
     private func setupUI() {
         self.themeBackgroundColor = .appearance_sectionBackground
-        
+
         addSubview(incomingMessagePreview)
         addSubview(outgoingMessagePreview)
-        
+
         setupLayout()
     }
-    
+
     private func setupLayout() {
         incomingMessagePreview.pin(.top, to: .top, of: self)
         incomingMessagePreview.pin(.leading, to: .leading, of: self, withInset: Values.veryLargeSpacing)
-        
+
         outgoingMessagePreview.pin(.top, to: .bottom, of: incomingMessagePreview)
         outgoingMessagePreview.pin(.trailing, to: .trailing, of: self, withInset: -Values.veryLargeSpacing)
         outgoingMessagePreview.pin(.bottom, to: .bottom, of: self, withInset: -Values.mediumSpacing)

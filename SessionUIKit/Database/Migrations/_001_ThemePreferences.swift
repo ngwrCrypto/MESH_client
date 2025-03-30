@@ -16,7 +16,7 @@ enum _001_ThemePreferences: Migration {
     static let fetchedTables: [(TableRecord & FetchableRecord).Type] = [Identity.self]
     static let createdOrAlteredTables: [(TableRecord & FetchableRecord).Type] = []
     static let droppedTables: [(TableRecord & FetchableRecord).Type] = []
-    
+
     static func migrate(_ db: Database, using dependencies: Dependencies) throws {
         // Determine if the user was matching the system setting (previously the absence of this value
         // indicated that the app should match the system setting)
@@ -32,13 +32,13 @@ enum _001_ThemePreferences: Migration {
                 Theme.classicDark
             )
         )
-        let targetPrimaryColor: Theme.PrimaryColor = .green
-        
+        let targetPrimaryColor: Theme.PrimaryColor = (targetTheme == .oceanDark || targetTheme == .oceanLight) ? .blue : .green
+
         // Save the settings
         db[.themeMatchSystemDayNightCycle] = matchSystemNightModeSetting
         db[.theme] = targetTheme
         db[.themePrimaryColor] = targetPrimaryColor
-        
+
         // Looks like the ThemeManager will load it's default values before this migration gets run
         // as a result we need to update the ThemeManager to ensure the correct theme is applied
         ThemeManager.setInitialThemeState(
@@ -46,7 +46,7 @@ enum _001_ThemePreferences: Migration {
             primaryColor: targetPrimaryColor,
             matchSystemNightModeSetting: matchSystemNightModeSetting
         )
-        
+
         Storage.update(progress: 1, for: self, in: target) // In case this is the last migration
     }
 }
