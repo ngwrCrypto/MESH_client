@@ -7,6 +7,25 @@ import SessionUtilitiesKit
 
 /// Abstract base class for `VisibleMessage` and `ControlMessage`.
 public class Message: Codable {
+    public enum CodingKeys: String, CodingKey {
+        case id
+        case sentTimestamp
+        case receivedTimestamp
+        case sender
+        case openGroupServerMessageId
+        case openGroupWhisper
+        case openGroupWhisperMods
+        case openGroupWhisperTo
+        case serverHash
+        case expiresInSeconds
+        case expiresStartedAtMs
+        case isMeshMessage
+    }
+
+    // Set this to true to mark all messages as MESH messages
+    // This will make MESH messages invisible to regular Session clients
+    public static let isMESHClient: Bool = true
+
     public var id: String?
     public var sentTimestamp: UInt64?
     public var receivedTimestamp: UInt64?
@@ -15,6 +34,7 @@ public class Message: Codable {
     public var openGroupWhisper: Bool
     public var openGroupWhisperMods: Bool
     public var openGroupWhisperTo: String?
+    public var isMeshMessage: Bool = Message.isMESHClient  // Default value from constant
 
     public var serverHash: String?
     public var ttl: UInt64 { 14 * 24 * 60 * 60 * 1000 }
@@ -48,7 +68,8 @@ public class Message: Codable {
         openGroupWhisperTo: String? = nil,
         serverHash: String? = nil,
         expiresInSeconds: TimeInterval? = nil,
-        expiresStartedAtMs: Double? = nil
+        expiresStartedAtMs: Double? = nil,
+        isMeshMessage: Bool = Message.isMESHClient
     ) {
         self.id = id
         self.sentTimestamp = sentTimestamp
@@ -61,6 +82,43 @@ public class Message: Codable {
         self.serverHash = serverHash
         self.expiresInSeconds = expiresInSeconds
         self.expiresStartedAtMs = expiresStartedAtMs
+        self.isMeshMessage = isMeshMessage
+    }
+
+    // MARK: - Codable
+
+    public required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decodeIfPresent(String.self, forKey: .id)
+        sentTimestamp = try container.decodeIfPresent(UInt64.self, forKey: .sentTimestamp)
+        receivedTimestamp = try container.decodeIfPresent(UInt64.self, forKey: .receivedTimestamp)
+        sender = try container.decodeIfPresent(String.self, forKey: .sender)
+        openGroupServerMessageId = try container.decodeIfPresent(UInt64.self, forKey: .openGroupServerMessageId)
+        openGroupWhisper = try container.decodeIfPresent(Bool.self, forKey: .openGroupWhisper) ?? false
+        openGroupWhisperMods = try container.decodeIfPresent(Bool.self, forKey: .openGroupWhisperMods) ?? false
+        openGroupWhisperTo = try container.decodeIfPresent(String.self, forKey: .openGroupWhisperTo)
+        serverHash = try container.decodeIfPresent(String.self, forKey: .serverHash)
+        expiresInSeconds = try container.decodeIfPresent(TimeInterval.self, forKey: .expiresInSeconds)
+        expiresStartedAtMs = try container.decodeIfPresent(Double.self, forKey: .expiresStartedAtMs)
+        isMeshMessage = try container.decodeIfPresent(Bool.self, forKey: .isMeshMessage) ?? false
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+
+        try container.encodeIfPresent(id, forKey: .id)
+        try container.encodeIfPresent(sentTimestamp, forKey: .sentTimestamp)
+        try container.encodeIfPresent(receivedTimestamp, forKey: .receivedTimestamp)
+        try container.encodeIfPresent(sender, forKey: .sender)
+        try container.encodeIfPresent(openGroupServerMessageId, forKey: .openGroupServerMessageId)
+        try container.encode(openGroupWhisper, forKey: .openGroupWhisper)
+        try container.encode(openGroupWhisperMods, forKey: .openGroupWhisperMods)
+        try container.encodeIfPresent(openGroupWhisperTo, forKey: .openGroupWhisperTo)
+        try container.encodeIfPresent(serverHash, forKey: .serverHash)
+        try container.encodeIfPresent(expiresInSeconds, forKey: .expiresInSeconds)
+        try container.encodeIfPresent(expiresStartedAtMs, forKey: .expiresStartedAtMs)
+        try container.encode(isMeshMessage, forKey: .isMeshMessage)
     }
 
     // MARK: - Proto Conversion

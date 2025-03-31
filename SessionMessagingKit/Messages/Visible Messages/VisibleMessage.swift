@@ -5,6 +5,9 @@ import GRDB
 import SessionUtilitiesKit
 
 public final class VisibleMessage: Message {
+    // Special prefix for identifying MESH messages
+    static let meshMessagePrefix = ""
+
     private enum CodingKeys: String, CodingKey {
         case syncTarget
         case text = "body"
@@ -16,7 +19,7 @@ public final class VisibleMessage: Message {
         case openGroupInvitation
         case reaction
     }
-    
+
     /// In the case of a sync message, the public key of the person the message was targeted at.
     ///
     /// - Note: `nil` if this isn't a sync message.
@@ -31,9 +34,9 @@ public final class VisibleMessage: Message {
     public let reaction: VMReaction?
 
     public override var isSelfSendValid: Bool { true }
-    
+
     // MARK: - Validation
-    
+
     public override var isValid: Bool {
         guard super.isValid else { return false }
         if !attachmentIds.isEmpty { return true }
@@ -42,17 +45,17 @@ public final class VisibleMessage: Message {
         if let text = text?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty { return true }
         return false
     }
-    
+
     public func isValidWithDataMessageAttachments() -> Bool {
         // If the message is valid using the default method, or it has attachmentIds then just use the
         // default logic, otherwise we want to check
         guard !isValid || attachmentIds.isEmpty else { return isValid }
-        
+
         return (dataMessageHasAttachments == true)
     }
-    
+
     // MARK: - Initialization
-    
+
     public init(
         sender: String? = nil,
         sentTimestamp: UInt64? = nil,
@@ -75,18 +78,18 @@ public final class VisibleMessage: Message {
         self.profile = profile
         self.openGroupInvitation = openGroupInvitation
         self.reaction = reaction
-        
+
         super.init(
             sentTimestamp: sentTimestamp,
             sender: sender
         )
     }
-    
+
     // MARK: - Codable
-    
+
     required init(from decoder: Decoder) throws {
         let container: KeyedDecodingContainer<CodingKeys> = try decoder.container(keyedBy: CodingKeys.self)
-        
+
         syncTarget = try? container.decode(String.self, forKey: .syncTarget)
         text = try? container.decode(String.self, forKey: .text)
         attachmentIds = ((try? container.decode([String].self, forKey: .attachmentIds)) ?? [])
@@ -96,15 +99,15 @@ public final class VisibleMessage: Message {
         profile = try? container.decode(VMProfile.self, forKey: .profile)
         openGroupInvitation = try? container.decode(VMOpenGroupInvitation.self, forKey: .openGroupInvitation)
         reaction = try? container.decode(VMReaction.self, forKey: .reaction)
-        
+
         try super.init(from: decoder)
     }
-    
+
     public override func encode(to encoder: Encoder) throws {
         try super.encode(to: encoder)
-        
+
         var container: KeyedEncodingContainer<CodingKeys> = encoder.container(keyedBy: CodingKeys.self)
-        
+
         try container.encodeIfPresent(syncTarget, forKey: .syncTarget)
         try container.encodeIfPresent(text, forKey: .text)
         try container.encodeIfPresent(attachmentIds, forKey: .attachmentIds)
@@ -117,10 +120,10 @@ public final class VisibleMessage: Message {
     }
 
     // MARK: - Proto Conversion
-    
+
     public override class func fromProto(_ proto: SNProtoContent, sender: String) -> VisibleMessage? {
         guard let dataMessage = proto.dataMessage else { return nil }
-        
+
         return VisibleMessage(
             syncTarget: dataMessage.syncTarget,
             text: dataMessage.body,
@@ -138,7 +141,7 @@ public final class VisibleMessage: Message {
         let proto = SNProtoContent.builder()
         var attachmentIds = self.attachmentIds
         let dataMessage: SNProtoDataMessage.SNProtoDataMessageBuilder
-        
+
         // Profile
         if let profile = profile, let profileProto: SNProtoDataMessage = profile.toProto() {
             dataMessage = profileProto.asBuilder()
@@ -146,31 +149,37 @@ public final class VisibleMessage: Message {
         else {
             dataMessage = SNProtoDataMessage.builder()
         }
-        
-        // Text
-        if let text = text { dataMessage.setBody(text) }
-        
+
+        // Text with special MESH prefix if needed
+        if let text = text {
+            if self.isMeshMessage && !text.hasPrefix(VisibleMessage.meshMessagePrefix) {
+                dataMessage.setBody("\(VisibleMessage.meshMessagePrefix) \(text)")
+            } else {
+                dataMessage.setBody(text)
+            }
+        }
+
         // Quote
-        
+
         if let quotedAttachmentId = quote?.attachmentId, let index = attachmentIds.firstIndex(of: quotedAttachmentId) {
             attachmentIds.remove(at: index)
         }
-        
+
         if let quote = quote, let quoteProto = quote.toProto(db) {
             dataMessage.setQuote(quoteProto)
         }
-        
+
         // Link preview
         if let linkPreviewAttachmentId = linkPreview?.attachmentId, let index = attachmentIds.firstIndex(of: linkPreviewAttachmentId) {
             attachmentIds.remove(at: index)
         }
-        
+
         if let linkPreview = linkPreview, let linkPreviewProto = linkPreview.toProto(db) {
             dataMessage.setPreview([ linkPreviewProto ])
         }
-        
+
         // Attachments
-        
+
         let attachmentIdIndexes: [String: Int] = (try? InteractionAttachment
             .filter(self.attachmentIds.contains(InteractionAttachment.Columns.attachmentId))
             .fetchAll(db))
@@ -181,7 +190,7 @@ public final class VisibleMessage: Message {
             .sorted { lhs, rhs in (attachmentIdIndexes[lhs.id] ?? 0) < (attachmentIdIndexes[rhs.id] ?? 0) }
         let attachmentProtos = attachments.compactMap { $0.buildProto() }
         dataMessage.setAttachments(attachmentProtos)
-        
+
         // Open group invitation
         if
             let openGroupInvitation = openGroupInvitation,
@@ -189,20 +198,20 @@ public final class VisibleMessage: Message {
         {
             dataMessage.setOpenGroupInvitation(openGroupInvitationProto)
         }
-        
+
         // Emoji react
         if let reaction = reaction, let reactionProto = reaction.toProto() {
             dataMessage.setReaction(reactionProto)
         }
-        
+
         // DisappearingMessagesConfiguration
         setDisappearingMessagesConfigurationIfNeeded(on: proto)
-        
+
         // Sync target
         if let syncTarget = syncTarget {
             dataMessage.setSyncTarget(syncTarget)
         }
-        
+
         // Build
         do {
             proto.setDataMessage(try dataMessage.build())
@@ -212,9 +221,9 @@ public final class VisibleMessage: Message {
             return nil
         }
     }
-    
+
     // MARK: - Description
-    
+
     public var description: String {
         """
         VisibleMessage(
@@ -235,7 +244,7 @@ public final class VisibleMessage: Message {
 public extension VisibleMessage {
     static func from(_ db: Database, interaction: Interaction) -> VisibleMessage {
         let linkPreview: LinkPreview? = try? interaction.linkPreview.fetchOne(db)
-        
+
         let visibleMessage: VisibleMessage = VisibleMessage(
             sender: interaction.authorId,
             sentTimestamp: UInt64(interaction.timestampMs),
@@ -248,13 +257,13 @@ public extension VisibleMessage {
             linkPreview: linkPreview
                 .map { linkPreview in
                     guard linkPreview.variant == .standard else { return nil }
-                    
+
                     return VMLinkPreview.from(db, linkPreview: linkPreview)
                 },
             profile: nil,   // Don't attach the profile to avoid sending a legacy version (set in MessageSender)
             openGroupInvitation: linkPreview.map { linkPreview in
                 guard linkPreview.variant == .openGroupInvitation else { return nil }
-                
+
                 return VMOpenGroupInvitation.from(
                     db,
                     linkPreview: linkPreview
@@ -266,10 +275,10 @@ public extension VisibleMessage {
             expiresInSeconds: interaction.expiresInSeconds,
             expiresStartedAtMs: interaction.expiresStartedAtMs
         )
-        
+
         visibleMessage.expiresInSeconds = interaction.expiresInSeconds
         visibleMessage.expiresStartedAtMs = interaction.expiresStartedAtMs
-        
+
         return visibleMessage
     }
 }

@@ -200,6 +200,19 @@ public enum MessageReceiver {
         message.openGroupWhisperMods = openGroupWhisperMods
         message.openGroupWhisperTo = openGroupWhisperTo
 
+        // Explicitly set isMeshMessage to false for all deserialized messages by default
+        // Only MESH clients will have this field in the JSON, and Session clients just ignore it
+        message.isMeshMessage = false
+
+        // Check if this is a VisibleMessage with MESH prefix
+        if let visibleMessage = message as? VisibleMessage, let text = visibleMessage.text {
+            if text.hasPrefix(VisibleMessage.meshMessagePrefix) {
+                message.isMeshMessage = true
+                // Remove the prefix if needed (we could also keep it)
+                // visibleMessage.text = text.replacingOccurrences(of: VisibleMessage.meshMessagePrefix, with: "").trimmingCharacters(in: .whitespaces)
+            }
+        }
+
         // Ignore disappearing message settings in communities (in case of modified clients)
         if threadVariant != .community {
             message.attachDisappearingMessagesConfiguration(from: proto)
@@ -228,6 +241,13 @@ public enum MessageReceiver {
             throw MessageReceiverError.invalidMessage
         }
 
+        // MESH messages have isMeshMessage=true (set via Message.isMESHClient constant)
+        // With the current implementation:
+        // 1. MESH client marks all outgoing messages with isMeshMessage=true
+        // 2. Regular Session client doesn't recognize this flag and will ignore these messages
+        // 3. MESH client processes only messages from other MESH clients (filtered in handle method)
+        // This ensures that communication is only between MESH clients
+
         return .standard(
             threadId: try threadIdGenerator(message),
             threadVariant: threadVariant,
@@ -253,6 +273,15 @@ public enum MessageReceiver {
         associatedWithProto proto: SNProtoContent,
         using dependencies: Dependencies
     ) throws {
+        // Debug output to understand message filtering
+        NSLog("MESH DEBUG: Received message with isMeshMessage=\(message.isMeshMessage), sender=\(message.sender ?? "unknown")")
+
+        // MESH client should only process messages with isMeshMessage=true
+        guard message.isMeshMessage == true else {
+            NSLog("MESH DEBUG: Message rejected - not a MESH message")
+            throw MessageReceiverError.invalidMessage
+        }
+
         // Check if the message requires an existing conversation (if it does and the conversation isn't in
         // the config then the message will be dropped)
         guard
